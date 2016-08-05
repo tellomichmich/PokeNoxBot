@@ -290,6 +290,7 @@ def FindPokemon():
     
     #SpinnedPokeStop
     RemoveColor(Frame, (192, 115, 248), 0.1)
+    RemoveColor(Frame, (154, 103, 234), 0.1)
   
     #Remove player
     RemoveInSquare(Frame, 91, 44, 23, 37)
