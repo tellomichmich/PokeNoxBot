@@ -453,6 +453,8 @@ while True:
                     while IsSpinnedPokestop() == False:
                         print "Wait for spinned pokestop"
                     ClosePokestop()
+                    while IsOnMap() == False:
+                        print "[!] Waiting return to the map"
                 else:
                     print "Failed to OpenPokestop"
             
