@@ -287,6 +287,9 @@ def FindPokemon():
     #PokeStop Circle
     #RemoveColor(Frame, (177, 248, 255), 0.1)
     RemoveBlue(Frame, 254)
+    
+    #SpinnedPokeStop
+    RemoveColor(Frame, (192, 115, 248), 0.1)
   
     #Remove player
     RemoveInSquare(Frame, 91, 44, 23, 37)
@@ -430,7 +433,7 @@ while True:
             while True:
                 img = GetImgFromScreenShot()
                 PokeStopPosition = None
-                #PokeStopPosition = FindPokestop(img)
+                PokeStopPosition = FindPokestop(img)
                 if PokeStopPosition is None:
                     print "[!] No more Pokestop found."
                     break
