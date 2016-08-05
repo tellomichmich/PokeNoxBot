@@ -212,7 +212,7 @@ def FindPokestop(img):
     #RemoveInSquare(img, 259, 536, 24, 42)
     #RemoveNotInSquare(img, 200-50, 514-50, 137+100, 119+100)
     #Safe values : 165, 455, 110, 100
-    ClickPosition = FindClick(img, 135, 438, 200, 150)
+    ClickPosition = FindClick(img, 165, 455, 110, 100)
     return ClickPosition
     
 def BlackOrWhite(img):
