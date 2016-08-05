@@ -2,6 +2,7 @@
 
 import json
 import time
+import io
 
 import random
 import sys
@@ -146,24 +147,11 @@ def GetMeanColor(img, x, y):
     MeanColor[1] = MeanColor[1]/100
     MeanColor[2] = MeanColor[2]/100
     return MeanColor
-    
-def FindClick(img, x, y, xs, ys):
-    pixdata = img.load()
-    for xr in range(x, x+xs-10):
-        for yr in range(y, y+ys-10):
-            MeanColor = GetMeanColor(img, xr, yr)
-            if IsColorInCeil(MeanColor, [42, 172, 255], 0.2):
-            #if IsColorInCeil(MeanColor, [87, 255, 255], 0.2):
-                return [xr+5, yr+5]
-    return None
+
 
 def GetImgFromScreenShot():
     Screenshot = TakePngScreenshot()
-    f = open("output.png", 'wb')
-    f.write(Screenshot)
-    f.close()
-               
-    img = Image.open("output.png")
+    img = Image.open(io.BytesIO(Screenshot))
     img = img.convert("RGB")
     return img
     
@@ -175,7 +163,7 @@ def GetImgFromFile(File):
 def IsOpenPokestop():
     img = GetImgFromScreenShot()
     MeanColor = GetMeanColor(img, 234, 780)
-    print MeanColor
+    #print MeanColor
     if IsColorInCeil(MeanColor, [31, 164, 255], 0.3):
         return True
     return False
@@ -192,31 +180,18 @@ def IsSpinnedPokestop():
      
 def ClosePokestop():
     Tap(236, 736)
-
-def FindPokestop(img):
-    ColorBlackList = []
-    #Night
-    #RemoveColor(img, (104, 137, 177), 0.1)
-    #Night Road
-    #RemoveColor(img, (44, 78, 123), 0.2)
-    #Night Road Border
-    #RemoveColor(img, (186, 203, 137), 0.1)
-    #RemoveColor(img, (13, 38, 79), 0.1)
-    #RemoveColor(img, (69, 134, 101), 0.1)
-    #RemoveColor(img, (6, 95, 141), 0.1)
-    #RemoveColor(img, (2, 88, 130), 0.1)
-    #RemoveColor(img, (54, 161, 157), 0.1)
-    #Green
-    #RemoveColor(img, (82, 135, 142), 0.1)
-    #RemoveColor(img, (76, 162, 188), 0.1)
-    #Circle 
-    #RemoveColor(img, (154, 132, 204), 0.1)
-    #Remove the Player
-    #RemoveInSquare(img, 259, 536, 24, 42)
-    #RemoveNotInSquare(img, 200-50, 514-50, 137+100, 119+100)
-    #Safe values : 165, 455, 110, 100
-    ClickPosition = FindClick(img, 165, 455, 110, 100)
-    return ClickPosition
+    
+def FindPokestop():
+    img = GetImgFromScreenShot()
+    pixdata = img.load()
+    x, y, xs, ys = (165, 455, 110, 100)
+    for xr in range(x, x+xs-10):
+        for yr in range(y, y+ys-10):
+            MeanColor = GetMeanColor(img, xr, yr)
+            if IsColorInCeil(MeanColor, [42, 172, 255], 0.2):
+            #if IsColorInCeil(MeanColor, [87, 255, 255], 0.2):
+                return [xr+5, yr+5]
+    return None
     
 def BlackOrWhite(img):
     pixdata = img.load()
@@ -329,7 +304,7 @@ def IsCatchSucess():
     pixdata = img.load()
     return IsColorInCeil(pixdata[44, 227], (254, 255, 254), 0.01)
     
-def CatchPokemon(PokemonPosition):
+def PokemonWorker(PokemonPosition):
     print PokemonPosition
     Tap(PokemonPosition[0], PokemonPosition[1])
 
@@ -342,6 +317,10 @@ def CatchPokemon(PokemonPosition):
         print "Wait for Pokemon fight..."
     
     if bIsPokemonFightOpened == False:
+        #We maybe clicked on a PokeStop...
+        if IsOpenPokestop():
+            ClosePokestop()
+            
         return False
 
     while True:
@@ -412,7 +391,38 @@ def CleanInventory():
     #Close Inventory
     Tap(236, 736)
     
-    
+#SpinnedPokeStopCount = 0
+def PokestopWorker(PokeStopPosition):
+    print "[!] Working on Pokestop %d %d" % (PokeStopPosition[0], PokeStopPosition[1])
+    Tap(PokeStopPosition[0], PokeStopPosition[1])
+    bOpenPokestopSuccess = False
+    for i in range(0, 5):
+        if IsOpenPokestop() == True:
+            bOpenPokestopSuccess = True
+            break
+        print "[!] Wait for open pokestop"
+            
+    if bOpenPokestopSuccess == True:
+        SpinPokestop()
+        while IsSpinnedPokestop() == False:
+            print "Wait for spinned pokestop"
+        ClosePokestop()
+        #SpinnedPokeStopCount += 1
+        while IsOnMap() == False:
+            print "[!] Waiting return to the map"
+        #if SpinnedPokeStopCount%2 == 1:
+        #    CleanInventory()
+    else:
+        print "Failed to OpenPokestop"
+        
+def SetPosition(Position):
+    #Command = "adb shell am startservice -a com.incorporateapps.fakegps.ENGAGE --ef lat %f --ef lng %f --activity-single-top --activity-brought-to-front --activity-brought-to-front --debug-log-resolution" % (geo_point[1], geo_point[0])
+    Command = "adb shell gps fix %f %f " % (Position[0], Position[1])
+    #Saved position
+    f = open("saved_position.txt", "w")
+    f.write("%f,%f,%f" % (Position[1], Position[0], Position[2]))
+    f.close()
+    os.system(Command)
     
 #Core...
 
@@ -465,46 +475,17 @@ SpinnedPokeStopCount = 0
 while True:
     for geo_point in loop_geo_points:
         Count += 1
-        #Command = "adb shell am startservice -a com.incorporateapps.fakegps.ENGAGE --ef lat %f --ef lng %f --activity-single-top --activity-brought-to-front --activity-brought-to-front --debug-log-resolution" % (geo_point[1], geo_point[0])
-        Command = "adb shell gps fix %f %f " % (geo_point[0], geo_point[1])
-        #Saved position
-        f = open("saved_position.txt", "w")
-        f.write("%f,%f,%f" % (geo_point[1], geo_point[0], geo_point[2]))
-        f.close()
-        os.system(Command)
+        SetPosition(geo_point)
         if Count%(50/Speed)==0:
             print "[!] Looking around..."
             time.sleep(3)
             print "[!] Looking for Pokestop"
             while True:
-                img = GetImgFromScreenShot()
-                PokeStopPosition = None
-                PokeStopPosition = FindPokestop(img)
+                PokeStopPosition = FindPokestop()
                 if PokeStopPosition is None:
                     print "[!] No more Pokestop found."
                     break
-                    
-                print "PokeStopPosition %d %d" % (PokeStopPosition[0], PokeStopPosition[1])
-                Tap(PokeStopPosition[0], PokeStopPosition[1])
-                bOpenPokestopSuccess = False
-                for i in range(0, 5):
-                    if IsOpenPokestop() == True:
-                        bOpenPokestopSuccess = True
-                        break
-                    print "Wait for open pokestop"
-                    
-                if bOpenPokestopSuccess == True:
-                    SpinPokestop()
-                    while IsSpinnedPokestop() == False:
-                        print "Wait for spinned pokestop"
-                    ClosePokestop()
-                    SpinnedPokeStopCount += 1
-                    while IsOnMap() == False:
-                        print "[!] Waiting return to the map"
-                    #if SpinnedPokeStopCount%2 == 1:
-                    #    CleanInventory()
-                else:
-                    print "Failed to OpenPokestop"
+                PokestopWorker(PokeStopPosition)
             
             print "[!] Looking for pokemon"
             while True:
@@ -512,4 +493,4 @@ while True:
                 if PokemonPosition is None:
                     print "[!] No more Pokemon not found."
                     break
-                CatchPokemon(PokemonPosition)
+                PokemonWorker(PokemonPosition)
