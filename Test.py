@@ -13,6 +13,9 @@ from PIL import Image
 from math import ceil, radians, cos, sin, asin, sqrt
 import re
 
+assert sys.version_info >= (2,7)
+assert sys.version_info < (3,0)
+
 #Rotate a python list
 def rotate_list(l,n):
     return l[-n:] + l[:-n]
@@ -408,6 +411,11 @@ def CleanInventory():
         time.sleep(0.5)
     #Close Inventory
     Tap(236, 736)
+    
+    
+    
+#Core...
+
 
 #Tap(272, 800)
 #Swipe(539, 200, 0, 200)
