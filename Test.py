@@ -55,7 +55,7 @@ def geo_point_from_kml(kml_filename, speed):
     geo_points = []
     f = open(kml_filename)
     for line in f:
-        if re.match(".*,.*,.*", line):
+        if re.match("[-+]?[0-9]*\.?[0-9]+,[-+]?[0-9]*\.?[0-9]+,[-+]?[0-9]*\.?[0-9]+", line):
             geo_point = line.strip().split(',')
             geo_points.append([float(geo_point[0]), float(geo_point[1]), float(geo_point[2])])
     f.close()
