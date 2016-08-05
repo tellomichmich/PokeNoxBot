@@ -374,6 +374,40 @@ def CatchPokemon(PokemonPosition):
     return True
     
     #sys.exit(0)
+    
+def CleanInventory():
+    print "[!] Clean inventory..."
+    if IsOnMap() == False:
+        print "[!] Not on the map !"
+        return False
+    Tap(236, 736)
+    time.sleep(1)
+    Tap(372, 651)
+    time.sleep(1)
+    while True:
+        img = GetImgFromScreenShot()
+        FirstObjectColor = GetMeanColor(img, 80, 200)
+        print FirstObjectColor
+        if IsColorInCeil(FirstObjectColor, [240, 79, 238], 0.01):
+            print "[!] Lot of Potions will be dropped !"
+        elif IsColorInCeil(FirstObjectColor, [253, 217, 55], 0.01):
+            print "[!] Lot of Super Potions will be dropped !"
+        elif IsColorInCeil(FirstObjectColor, [251, 228, 218], 0.01):
+            print "[!] Lot of Hyper Potions will be dropped !"
+        elif IsColorInCeil(FirstObjectColor, [254, 224, 96], 0.01):
+            print "[!] Lot of Revives will be dropped !"
+        else:
+            print "[!] Nothing to drop !"
+            break
+        #Remove this object
+        Tap(438, 150)
+        time.sleep(1)
+        #1sec for 25 elements
+        SwipeTime(351,355,351,355,1000)
+        Tap(236, 511)
+        time.sleep(0.5)
+    #Close Inventory
+    Tap(236, 736)
 
 #Tap(272, 800)
 #Swipe(539, 200, 0, 200)
@@ -389,6 +423,7 @@ def CatchPokemon(PokemonPosition):
 #print PokemonPosition
 #print IsCatchSucess()
 #CatchPokemon([376, 512])
+#CleanInventory()
 #sys.exit(0)
 
 Speed = 10
@@ -418,6 +453,7 @@ if os.path.isfile("saved_position.txt"):
 		#Teleport Security
 
 Count = 0
+SpinnedPokeStopCount = 0
 while True:
     for geo_point in loop_geo_points:
         Count += 1
@@ -454,8 +490,11 @@ while True:
                     while IsSpinnedPokestop() == False:
                         print "Wait for spinned pokestop"
                     ClosePokestop()
+                    SpinnedPokeStopCount += 1
                     while IsOnMap() == False:
                         print "[!] Waiting return to the map"
+                    #if SpinnedPokeStopCount%2 == 1:
+                    #    CleanInventory()
                 else:
                     print "Failed to OpenPokestop"
             
