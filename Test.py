@@ -85,7 +85,6 @@ def Swipe(x1, y1, x2, y2):
     
 def SwipeTime(x1, y1, x2, y2, t):
     Command = "adb shell input swipe %d %d %d %d %d" % (x1, y1, x2, y2, t)
-    print Command
     os.system(Command)
 
 
@@ -143,12 +142,10 @@ def GetMeanColor(img, x, y, size=10):
             MeanColor[0] = MeanColor[0] + pixdata[xr, yr][0]
             MeanColor[1] = MeanColor[1] + pixdata[xr, yr][1]
             MeanColor[2] = MeanColor[2] + pixdata[xr, yr][2]
-            #pixdata[xr, yr] = (0, 0, 255)
-    MeanColor[0] = MeanColor[0]/100
-    MeanColor[1] = MeanColor[1]/100
-    MeanColor[2] = MeanColor[2]/100
+    MeanColor[0] = MeanColor[0]/(size**2)
+    MeanColor[1] = MeanColor[1]/(size**2)
+    MeanColor[2] = MeanColor[2]/(size**2)
     return MeanColor
-
 
 def GetImgFromScreenShot():
     Screenshot = TakePngScreenshot()
@@ -182,6 +179,9 @@ def IsSpinnedPokestop():
 def ClosePokestop():
     Tap(236, 736)
 
+def CloseGym():
+    Tap(236, 736)
+    
 #TODO !
 def ReturnToMap():
     if IsOnMap() == False:
@@ -191,23 +191,28 @@ def FindPokestop():
     ReturnToMap();    
     img = GetImgFromScreenShot()
     pixdata = img.load()
-    x, y, xs, ys = (165, 455, 110, 100)
+    x, y, xs, ys = (188, 466, 128, 100)
     SquareSize = 10
     for xr in range(x+(SquareSize/2), x+xs-(SquareSize/2)):
         for yr in range(y+(SquareSize/2), y+ys-(SquareSize/2)):
             MeanColor = GetMeanColor(img, xr, yr, SquareSize)
-            #if IsColorInCeil(MeanColor, [42, 172, 255], 0.2):
-            #if IsColorInCeil(MeanColor, [87, 255, 255], 0.2):
+            #if IsColorInCeil(MeanColor, [42, 172, 255], 0.15):
+            #    return [xr+(SquareSize/2), yr+(SquareSize/2)]
+            if IsColorInCeil(MeanColor, [87, 255, 255], 0.15):
+                return [xr+(SquareSize/2), yr+(SquareSize/2)]
             if IsColorInCeil(MeanColor, [64, 227, 252], 0.15):
-                return [xr+5, yr+5]
+                return [xr+(SquareSize/2), yr+(SquareSize/2)]
     return None
     
 def BlackOrWhite(img):
+    BlackCount = 0.0
     pixdata = img.load()
-    for yr in xrange(img.size[1]):
-        for xr in xrange(img.size[0]):
+    for xr in xrange(img.size[0]):
+        for yr in xrange(img.size[1]):
             if pixdata[xr, yr] != (255, 255, 255):
                pixdata[xr, yr] = (0, 0, 0)
+               BlackCount += 1
+    return (BlackCount/(img.size[0]*img.size[1]))*100
 
 def FindPokemonPosition(img):
     SquareSize = 7
@@ -227,6 +232,7 @@ def IsDay():
     
 def FindPokemon():
     ReturnToMap(); 
+    #img = GetImgFromFile("output.png")
     img = GetImgFromScreenShot()
     Frame = img.crop(((135, 438, 135+200, 438+150)))
     if IsDay() == True:
@@ -293,8 +299,12 @@ def FindPokemon():
     
     #Convert to Black And White
     Frame.save("OUT_COLOR.png")
-    BlackOrWhite(Frame)
-    
+    BlackRatio = BlackOrWhite(Frame)
+    print "BlackRatio %d" % (BlackRatio)
+    if BlackRatio > 10:
+        #Too many information on screen !
+        print "Near a Gym ??"
+        return False
     PokemonPosition = FindPokemonPosition(Frame)
     if not PokemonPosition is None:
         PokemonPosition[0] += 135
@@ -304,7 +314,7 @@ def FindPokemon():
 
 def ThrowPokeball(Power):
     #Near 200
-    print "[!] Throw a Pokeball"
+    print "[!] Throw a Pokeball (%d)" % (Power)
     SwipeTime(236, 780, 236, 400, Power)
 
 def IsPokemonFightOpen():
@@ -312,6 +322,11 @@ def IsPokemonFightOpen():
     pixdata = img.load()
     return IsColorInCeil(pixdata[426, 67], (241, 249, 241), 0.01)
  
+def IsGymOpen():
+    img = GetImgFromScreenShot()
+    pixdata = img.load()
+    return IsColorInCeil(pixdata[403, 560], (255, 255, 255), 0.01)
+    
 def IsOnMap():
     img = GetImgFromScreenShot()
     pixdata = img.load()
@@ -324,13 +339,14 @@ def IsCatchSucess():
     if IsColorInCeil(pixdata[44, 227], (254, 255, 254), 0.005) and IsColorInCeil(pixdata[22, 518], (247, 255, 245), 0.01):
         return True
     return False
+
     
 def PokemonWorker(PokemonPosition):
     print PokemonPosition
     Tap(PokemonPosition[0], PokemonPosition[1])
 
     bIsPokemonFightOpened = False
-    for i in range(0, 10):
+    for i in range(0, 5):
         #time.sleep(1)
         if IsPokemonFightOpen() == True:
             bIsPokemonFightOpened = True
@@ -340,16 +356,15 @@ def PokemonWorker(PokemonPosition):
             print "[!] Holly... This is a Pokestop"
             PokestopWorker(PokemonPosition)
             return False
-        print "Wait for Pokemon fight..."
+        print "[!] Wait for Pokemon fight..."
     
-    if bIsPokemonFightOpened == False:            
+    if bIsPokemonFightOpened == False:  
         return False
 
     while True:
         time.sleep(1)
         #TODO Detect 
-        ThrowPokeball(190+random.randint(-10,10))
-        ThrowPokeball(190+random.randint(-10, 10))
+        ThrowPokeball(190+random.randint(-20,20))
         time.sleep(1)
         bIsPokemonFightOpened = False
         bIsCatchSuccess = False
@@ -453,6 +468,41 @@ def SetPosition(Position):
     f.close()
     os.system(Command)
     
+def TransfertPokemon(Number):
+    if IsOnMap() == False:
+        print "[!] Not on the map !"
+        return False
+    #Open Menu
+    Tap(236, 736)
+    time.sleep(0.1)
+    Tap(104, 659)
+    time.sleep(0.2)
+    #Tap CP
+    Tap(415, 742)
+    time.sleep(0.1)
+    #Select CP
+    Tap(414, 631)
+    time.sleep(0.1)
+    #ScrollDown
+    SwipeTime(461, 123, 461, 12000, 300)
+    
+    for i in range(0, Number):
+        #Tap Down Right pokemon
+        Tap(83,619)
+        time.sleep(0.5)
+        #Options
+        Tap(418, 741)
+        time.sleep(0.1)
+        #Tap Transfert
+        Tap(423, 651)
+        time.sleep(0.1)
+        #Validation
+        Tap(236,452)
+        time.sleep(0.5)
+    
+    #Close Menu
+    Tap(236, 736)
+    time.sleep(0.2)
 #Core...
 
 
@@ -461,8 +511,8 @@ def SetPosition(Position):
 #Tap(490, 128)
 
 
-#img = GetImgFromFile("CatchSucess.png")
-#PokemonPosition = FindPokemon(img)
+#img = GetImgFromFile("output.png")
+#PokemonPosition = FindPokemon()
 #PokeStopPosition = FindPokestop(img)
 #img = GetImgFromScreenShot()
 #FindPokemon()
@@ -474,11 +524,10 @@ def SetPosition(Position):
 #CatchPokemon([376, 512])
 #CleanInventory()
 #print IsCatchSucess()
+#TransfertPokemon(3)
 #sys.exit(0)
 
 Speed = 10
-
-#pokeball 260 800 260 400 200
 loop_geo_points = geo_point_from_kml("Levalois.kml", Speed)
 
 #Searching for the nearest point 
@@ -520,9 +569,17 @@ while True:
             print "[!] Looking for pokemon"
             while True:
                 PokemonPosition = FindPokemon()
+                if PokemonPosition == False:
+                    print "[!] This place is near a Gym !"
+                    break
                 if PokemonPosition is None:
                     print "[!] No more Pokemon not found."
                     break
-                PokemonWorker(PokemonPosition)
+                PokemonWorkerReturn = PokemonWorker(PokemonPosition)
+                if PokemonWorkerReturn == False:
+                    if IsGymOpen() == True:
+                        CloseGym()
+                        print "[!] This place is near a Gym !"
+                        break
         Count += 1
         SetPosition(geo_point)
