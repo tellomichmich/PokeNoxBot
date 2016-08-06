@@ -288,7 +288,7 @@ def FindPokemon():
     RemoveInSquare(Frame, 91, 44, 23, 37)
     
     #Convert to Black And White
-    #BlackOrWhite(Frame)
+    BlackOrWhite(Frame)
     
     PokemonPosition = FindPokemonPosition(Frame)
     if not PokemonPosition is None:
