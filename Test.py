@@ -503,7 +503,7 @@ def SetPosition(Position):
     os.system(Command)
     
 def TransfertPokemon(Number):
-    print "[!] Low CP pokemon will be transfered..."]
+    print "[!] Low CP pokemon will be transfered..."
     if IsOnMap() == False:
         print "[!] Not on the map !"
         return False
