@@ -192,12 +192,13 @@ def FindPokestop():
     img = GetImgFromScreenShot()
     pixdata = img.load()
     x, y, xs, ys = (165, 455, 110, 100)
-    for xr in range(x, x+xs-10):
-        for yr in range(y, y+ys-10):
-            MeanColor = GetMeanColor(img, xr, yr)
+    SquareSize = 10
+    for xr in range(x+(SquareSize/2), x+xs-(SquareSize/2)):
+        for yr in range(y+(SquareSize/2), y+ys-(SquareSize/2)):
+            MeanColor = GetMeanColor(img, xr, yr, SquareSize)
             #if IsColorInCeil(MeanColor, [42, 172, 255], 0.2):
             #if IsColorInCeil(MeanColor, [87, 255, 255], 0.2):
-            if IsColorInCeil(MeanColor, [64, 227, 252], 0.1):
+            if IsColorInCeil(MeanColor, [64, 227, 252], 0.15):
                 return [xr+5, yr+5]
     return None
     
@@ -209,12 +210,12 @@ def BlackOrWhite(img):
                pixdata[xr, yr] = (0, 0, 0)
 
 def FindPokemonPosition(img):
-    SquareSize = 5
+    SquareSize = 7
     for xr in range(SquareSize/2, img.size[0]-(SquareSize/2)):
         for yr in range(SquareSize/2, img.size[1]-(SquareSize/2)):
             FalsePositiv = GetMeanColor(img, xr, yr, SquareSize)
             Score = (FalsePositiv[0]+FalsePositiv[1]+FalsePositiv[2])/3
-            if Score < 10:
+            if Score < 2:
                 return [xr, yr]
     return None
     
@@ -239,6 +240,7 @@ def FindPokemon():
         RemoveColor(Frame, (109, 255, 110), 0.1)
         RemoveColor(Frame, (118, 239, 186), 0.1)
         RemoveColor(Frame, (140, 255, 111), 0.1)
+        RemoveColor(Frame, (150, 242, 198), 0.1)
         #Day Building    
         RemoveColor(Frame, (109, 244, 160), 0.1)
         RemoveColor(Frame, (189, 255, 173), 0.1)
@@ -283,11 +285,14 @@ def FindPokemon():
     RemoveColor(Frame, (192, 115, 248), 0.1)
     RemoveColor(Frame, (154, 103, 234), 0.1)
     RemoveColor(Frame, (102, 87, 217), 0.1)
+    #SpinnedPokeStop foot
+    RemoveColor(Frame, (205, 186, 254), 0.1)
   
     #Remove player
     RemoveInSquare(Frame, 91, 44, 23, 37)
     
     #Convert to Black And White
+    Frame.save("OUT_COLOR.png")
     BlackOrWhite(Frame)
     
     PokemonPosition = FindPokemonPosition(Frame)
@@ -297,9 +302,10 @@ def FindPokemon():
     Frame.save("OUT.png")
     return PokemonPosition
 
-def ThrowPokeball():
+def ThrowPokeball(Power):
     #Near 200
-    SwipeTime(236, 780, 236, 400, 190)
+    print "[!] Throw a Pokeball"
+    SwipeTime(236, 780, 236, 400, Power)
 
 def IsPokemonFightOpen():
     img = GetImgFromScreenShot()
@@ -341,7 +347,9 @@ def PokemonWorker(PokemonPosition):
 
     while True:
         time.sleep(1)
-        ThrowPokeball()
+        #TODO Detect 
+        ThrowPokeball(190+random.randint(-10,10))
+        ThrowPokeball(190+random.randint(-10, 10))
         time.sleep(1)
         bIsPokemonFightOpened = False
         bIsCatchSuccess = False
@@ -409,8 +417,9 @@ def CleanInventory():
     #Close Inventory
     Tap(236, 736)
     
-#SpinnedPokeStopCount = 0
+SpinnedPokeStopCount = 0
 def PokestopWorker(PokeStopPosition):
+    global SpinnedPokeStopCount
     print "[!] Working on Pokestop %d %d" % (PokeStopPosition[0], PokeStopPosition[1])
     Tap(PokeStopPosition[0], PokeStopPosition[1])
     bOpenPokestopSuccess = False
@@ -424,10 +433,12 @@ def PokestopWorker(PokeStopPosition):
         SpinPokestop()
         while IsSpinnedPokestop() == False:
             print "Wait for spinned pokestop"
+        #sys.exit(0)
         ClosePokestop()
-        #SpinnedPokeStopCount += 1
         while IsOnMap() == False:
             print "[!] Waiting return to the map"
+            
+        #SpinnedPokeStopCount += 1
         #if SpinnedPokeStopCount%2 == 1:
         #    CleanInventory()
     else:
@@ -435,7 +446,7 @@ def PokestopWorker(PokeStopPosition):
         
 def SetPosition(Position):
     #Command = "adb shell am startservice -a com.incorporateapps.fakegps.ENGAGE --ef lat %f --ef lng %f --activity-single-top --activity-brought-to-front --activity-brought-to-front --debug-log-resolution" % (geo_point[1], geo_point[0])
-    Command = "adb shell gps fix %f %f " % (Position[0], Position[1])
+    Command = "adb shell gps fix %f %f" % (Position[0], Position[1])
     #Saved position
     f = open("saved_position.txt", "w")
     f.write("%f,%f,%f" % (Position[1], Position[0], Position[2]))
@@ -495,8 +506,6 @@ Count = 0
 SpinnedPokeStopCount = 0
 while True:
     for geo_point in loop_geo_points:
-        Count += 1
-        SetPosition(geo_point)
         if Count%(50/Speed)==0:
             print "[!] Looking around..."
             time.sleep(3)
@@ -515,3 +524,5 @@ while True:
                     print "[!] No more Pokemon not found."
                     break
                 PokemonWorker(PokemonPosition)
+        Count += 1
+        SetPosition(geo_point)
