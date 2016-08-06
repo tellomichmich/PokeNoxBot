@@ -369,7 +369,8 @@ def PokemonWorker(PokemonPosition):
         print "[!] Wait for Pokemon fight..."
     
     if bIsPokemonFightOpened == False:  
-        return False
+        #This is a big fail maybe a gym detected as Pokemon
+        return None
 
     while True:
         time.sleep(1)
@@ -614,5 +615,8 @@ while True:
                         CloseGym()
                         print "[!] This place is near a Gym !"
                         break
+                if PokemonWorkerReturn == None:
+                    print "[!] This place is near a Gym ?"
+                    break
         Count += 1
         SetPosition(geo_point)
