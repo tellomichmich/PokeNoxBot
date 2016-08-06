@@ -9,5 +9,10 @@ How to use ?
 * Zoom out 
 * Give a KML file, you can create it here: https://www.bikemap.net
 * Start the Bot
+
+Know bugs:
+* Gym detected as pokemon => (need to change to pokemon detection algorithm)
+* Some Pokestop aren't spinned => (need to improve to Pokestop detection algorithm)
+* Lot of shit append => (need to make lot of checks)
 </pre>
 
