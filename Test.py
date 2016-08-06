@@ -88,10 +88,14 @@ def SwipeTime(x1, y1, x2, y2, t):
     os.system(Command)
 
 def TakePngScreenshot():
-    TempPngScreenshot = "TempPngScreenshot"
-    Command = "adb shell \"screencap -p | busybox base64\""
-    PngScreenshotData = os.popen(Command).read()
-    PngScreenshotData = base64.b64decode(PngScreenshotData)
+    while True:
+        try:
+            Command = "adb shell \"screencap -p | busybox base64\""
+            PngScreenshotData = os.popen(Command).read()
+            PngScreenshotData = base64.b64decode(PngScreenshotData)
+            break;
+        except:
+            print "[!] Failed to get screen"
     return PngScreenshotData
  
 def IsColorInCeil(ColorToCheck, RefColor, Ceil):
@@ -167,8 +171,14 @@ def SpinPokestop():
 def IsSpinnedPokestop():
     img = GetImgFromScreenShot()
     MeanColor = GetMeanColor(img, 234, 780)
-    if IsColorInCeil(MeanColor, [140, 100, 240], 0.6):
+    if MeanColor[0] > 100:
         return True
+    # if IsColorInCeil(MeanColor, [140, 100, 240], 0.1):
+        # return True
+    # if IsColorInCeil(MeanColor, [184, 116, 249], 0.1):
+        # return True
+    # if IsColorInCeil(MeanColor, [211, 116, 249], 0.1):
+        # return True
     return False
      
 def ClosePokestop():
@@ -316,10 +326,9 @@ def FindPokemon():
     #Convert to Black And White
     Frame.save("OUT_COLOR.png")
     BlackRatio = BlackOrWhite(Frame)
-    print "BlackRatio %d" % (BlackRatio)
     if BlackRatio > 11:
         #Too many information on screen !
-        print "Near a Gym ??"
+        print "[!] Too many information on map..."
         return False
     PokemonPosition = FindPokemonPosition(Frame)
     if not PokemonPosition is None:
@@ -361,19 +370,24 @@ def IsCatchSucess():
 def PokemonWorker(PokemonPosition):
     print PokemonPosition
     Tap(PokemonPosition[0], PokemonPosition[1])
-
+    time.sleep(0.2)
     bIsPokemonFightOpened = False
-    for i in range(0, 5):
-        #time.sleep(1)
-        if IsPokemonFightOpen() == True:
-            bIsPokemonFightOpened = True
-            break;
-        #We maybe clicked on a PokeStop...
-        if IsOpenPokestop() == True:
-            print "[!] Holly... This is a Pokestop"
-            PokestopWorker(PokemonPosition)
-            return False
-        print "[!] Wait for Pokemon fight..."
+    #Check if the click successed
+    if IsOnMap() == True:
+        print "[!] Click failed !"
+    else:
+        for i in range(0, 5):
+            #time.sleep(1)
+            if IsPokemonFightOpen() == True:
+                bIsPokemonFightOpened = True
+                break;
+
+            #We maybe clicked on a PokeStop...
+            if IsOpenPokestop() == True:
+                print "[!] Holy... This is a Pokestop"
+                PokestopWorker(PokemonPosition)
+                return False
+            print "[!] Wait for Pokemon fight..."
     
     if bIsPokemonFightOpened == False:  
         #This is a big fail maybe a gym detected as Pokemon
@@ -408,7 +422,7 @@ def PokemonWorker(PokemonPosition):
             print "[!] Pokemon captured !"
             break
         if bIsOnMap == True:
-            print "[!] Pokemon leaved !"
+            print "[!] Pokemon flee !"
             return False
         if StressCount >= 3:
             bIsPokemonHitted = True
@@ -475,9 +489,13 @@ def PokestopWorker(PokeStopPosition):
             
     if bOpenPokestopSuccess == True:
         SpinPokestop()
-        while IsSpinnedPokestop() == False:
-            print "Wait for spinned pokestop"
-        #sys.exit(0)
+        bIsSpinnedPokestop = False
+        for i in range(5):
+            if IsSpinnedPokestop() == True:
+                bIsSpinnedPokestop = True
+                break
+            print "[!] Wait for spinned pokestop"
+            
         ClosePokestop()
         while IsOnMap() == False:
             print "[!] Waiting return to the map"
@@ -485,10 +503,11 @@ def PokestopWorker(PokeStopPosition):
         #SpinnedPokeStopCount += 1
         #if SpinnedPokeStopCount%2 == 1:
         #    CleanInventory()
-        return True
+        return bIsSpinnedPokestop
     else:
-        print "Failed to OpenPokestop"
+        print "[!] Failed to OpenPokestop"
         if IsPokemonFightOpen():
+            print "[!] Holy... This is a pokemon !"
             PokemonWorker(PokeStopPosition)
     return False
         
@@ -543,7 +562,11 @@ def TransfertPokemon(Number):
 def IsGameCrashed():
     img = GetImgFromScreenShot()
     pixdata = img.load()
-    return IsColorInCeil(pixdata[214, 410], (0, 0, 0), 0.01)
+    if IsColorInCeil(pixdata[214, 410], (0, 0, 0), 0.01):
+        return True
+    if IsColorInCeil(pixdata[214, 410], (40, 40, 40), 0.01):
+        return True
+    return False
     
 def IsPokeBoxFull():
     img = GetImgFromScreenShot()
@@ -552,6 +575,30 @@ def IsPokeBoxFull():
 
 def ClosePokemonFight():
     Tap(53, 65)
+
+#Todo: Take a while...
+def ZoomOut():
+    Command = "adb push Zoomout.scr /sdcard/Zoomout.scr"
+    os.system(Command)
+    Command = "adb shell sh /sdcard/Zoomout.scr"
+    os.system(Command)
+    
+def CheckApplicationAlive():
+    if IsGameCrashed():
+        Tap(240, 444)
+        time.sleep(0.5)
+        #Start the game
+        Tap(334, 291)
+        while IsOnMap() == False:
+            print "[!] Waiting for map..."
+            Tap(235, 457)
+        #Sometime got a "flash" map
+        time.sleep(2)
+        while IsOnMap() == False:
+            print "[!] Waiting for map..."
+            Tap(235, 457)
+        ZoomOut()
+    
 #Core...
 
 
@@ -574,11 +621,8 @@ def ClosePokemonFight():
 #CleanInventory()
 #print IsCatchSucess()
 #TransfertPokemon(30)
-#if IsGameCrashed()
-#Start the game
-#    Tap(334, 291)
-#    while IsOnMap() == False:
-#        Tap(235, 457)
+
+
 #sys.exit(0)
 
 
@@ -612,21 +656,23 @@ SpinnedPokeStopCount = 0
 while True:
     for geo_point in loop_geo_points:
         if Count%(50/Speed)==0:
+            #Sometime got a crash of pokemongo
+            CheckApplicationAlive()
             ReturnToMap()
             print "[!] Looking around..."
             time.sleep(3)
-            print "[!] Looking for Pokestop"
             while True:
+                print "[!] Looking for Pokestop"
                 PokeStopPosition = FindPokestop()
                 if PokeStopPosition is None:
                     print "[!] No more Pokestop found."
                     break
                 if PokestopWorker(PokeStopPosition) == False:
-                    print "[!] Something is strange... go away !"
+                    print "[!] Something is strange... go away (Soft-ban?)!"
                     break
             
-            print "[!] Looking for pokemon"
             while True:
+                print "[!] Looking for pokemon"
                 PokemonPosition = FindPokemon()
                 if PokemonPosition == False:
                     print "[!] This place is near a Gym !"

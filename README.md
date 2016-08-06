@@ -14,6 +14,6 @@ Know bugs:
 * Gym detected as pokemon => (need to change the pokemon detection algorithm)
 * Some Pokestop aren't spinned => (need to improve the Pokestop detection algorithm)
 * Lot of shit append => (need to make lot of checks)
-* Incens can't not be used with this bot
+* Incense can't be used with this bot
 </pre>
 
