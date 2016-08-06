@@ -192,14 +192,14 @@ def FindPokestop():
     img = GetImgFromScreenShot()
     pixdata = img.load()
     x, y, xs, ys = (188, 466, 128, 100)
-    SquareSize = 10
+    SquareSize = 15
     for xr in range(x+(SquareSize/2), x+xs-(SquareSize/2)):
         for yr in range(y+(SquareSize/2), y+ys-(SquareSize/2)):
             MeanColor = GetMeanColor(img, xr, yr, SquareSize)
             #if IsColorInCeil(MeanColor, [42, 172, 255], 0.15):
             #    return [xr+(SquareSize/2), yr+(SquareSize/2)]
-            if IsColorInCeil(MeanColor, [87, 255, 255], 0.15):
-                return [xr+(SquareSize/2), yr+(SquareSize/2)]
+            #if IsColorInCeil(MeanColor, [87, 255, 255], 0.15):
+            #    return [xr+(SquareSize/2), yr+(SquareSize/2)]
             if IsColorInCeil(MeanColor, [64, 227, 252], 0.15):
                 return [xr+(SquareSize/2), yr+(SquareSize/2)]
     return None
@@ -301,7 +301,7 @@ def FindPokemon():
     Frame.save("OUT_COLOR.png")
     BlackRatio = BlackOrWhite(Frame)
     print "BlackRatio %d" % (BlackRatio)
-    if BlackRatio > 10:
+    if BlackRatio > 11:
         #Too many information on screen !
         print "Near a Gym ??"
         return False
@@ -461,7 +461,8 @@ def PokestopWorker(PokeStopPosition):
         
 def SetPosition(Position):
     #Command = "adb shell am startservice -a com.incorporateapps.fakegps.ENGAGE --ef lat %f --ef lng %f --activity-single-top --activity-brought-to-front --activity-brought-to-front --debug-log-resolution" % (geo_point[1], geo_point[0])
-    Command = "adb shell gps fix %f %f" % (Position[0], Position[1])
+    #Command = "adb shell gps fix %f %f" % (Position[0], Position[1])
+    Command = "adb shell \"setprop persist.nox.gps.longitude %f && setprop persist.nox.gps.latitude %f && setprop persist.nox.gps.altitude %f\"" % (Position[0], Position[1], Position[2])
     #Saved position
     f = open("saved_position.txt", "w")
     f.write("%f,%f,%f" % (Position[1], Position[0], Position[2]))
@@ -503,6 +504,12 @@ def TransfertPokemon(Number):
     #Close Menu
     Tap(236, 736)
     time.sleep(0.2)
+    
+def IsGameCrashed():
+    img = GetImgFromScreenShot()
+    pixdata = img.load()
+    return IsColorInCeil(pixdata[214, 410], (0, 0, 0), 0.01)
+    
 #Core...
 
 
@@ -525,6 +532,11 @@ def TransfertPokemon(Number):
 #CleanInventory()
 #print IsCatchSucess()
 #TransfertPokemon(3)
+#if IsGameCrashed()
+#Start the game
+#    Tap(334, 291)
+#    while IsOnMap() == False:
+#        Tap(235, 457)
 #sys.exit(0)
 
 Speed = 10
