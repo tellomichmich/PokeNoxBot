@@ -8,6 +8,7 @@ import random
 import sys
 import os.path
 import base64
+import datetime
 
 from PIL import Image
 
@@ -134,11 +135,11 @@ def RemoveNotInSquare(img, x, y, xs, ys):
             if not((x+xs >= xr >= x) and (y+ys >= yr >= y)):
                 pixdata[xr, yr] = (255, 255, 255)
                 
-def GetMeanColor(img, x, y):
+def GetMeanColor(img, x, y, size=10):
     MeanColor = [0, 0, 0]
     pixdata = img.load()
-    for xr in range(x-5, x+5):
-        for yr in range(y-5, y+5):
+    for xr in range(x-(size/2), x+(size/2)):
+        for yr in range(y-(size/2), y+(size/2)):
             MeanColor[0] = MeanColor[0] + pixdata[xr, yr][0]
             MeanColor[1] = MeanColor[1] + pixdata[xr, yr][1]
             MeanColor[2] = MeanColor[2] + pixdata[xr, yr][2]
@@ -180,16 +181,23 @@ def IsSpinnedPokestop():
      
 def ClosePokestop():
     Tap(236, 736)
+
+#TODO !
+def ReturnToMap():
+    if IsOnMap() == False:
+        ClosePokestop()
     
 def FindPokestop():
+    ReturnToMap();    
     img = GetImgFromScreenShot()
     pixdata = img.load()
     x, y, xs, ys = (165, 455, 110, 100)
     for xr in range(x, x+xs-10):
         for yr in range(y, y+ys-10):
             MeanColor = GetMeanColor(img, xr, yr)
-            if IsColorInCeil(MeanColor, [42, 172, 255], 0.2):
+            #if IsColorInCeil(MeanColor, [42, 172, 255], 0.2):
             #if IsColorInCeil(MeanColor, [87, 255, 255], 0.2):
+            if IsColorInCeil(MeanColor, [64, 227, 252], 0.1):
                 return [xr+5, yr+5]
     return None
     
@@ -201,24 +209,26 @@ def BlackOrWhite(img):
                pixdata[xr, yr] = (0, 0, 0)
 
 def FindPokemonPosition(img):
-    for xr in range(5, img.size[0]-5):
-        for yr in range(5, img.size[1]-5):
-            FalsePositiv = GetMeanColor(img, xr, yr)
+    SquareSize = 5
+    for xr in range(SquareSize/2, img.size[0]-(SquareSize/2)):
+        for yr in range(SquareSize/2, img.size[1]-(SquareSize/2)):
+            FalsePositiv = GetMeanColor(img, xr, yr, SquareSize)
             Score = (FalsePositiv[0]+FalsePositiv[1]+FalsePositiv[2])/3
-            if Score < 60:
+            if Score < 10:
                 return [xr, yr]
     return None
-               
+    
+def IsDay():
+    Hour = datetime.datetime.now().hour  
+    if Hour > 7 and Hour < 19:
+        return True
+    return False
+    
 def FindPokemon():
+    ReturnToMap(); 
     img = GetImgFromScreenShot()
-    ColorBlackList = []
-    #Remove the Player
-    #RemoveInSquare(img, 259, 536, 24, 42)
-    #RemoveNotInSquare(img, 200-50, 514-50, 137+100, 119+100)
-    #ClickPosition = FindClick(img, 165, 455, 110, 100)
     Frame = img.crop(((135, 438, 135+200, 438+150)))
-    bIsDay = False
-    if bIsDay == True:
+    if IsDay() == True:
         #Day Road
         RemoveColor(Frame, (86, 162, 151), 0.1)
         #Day Road Border
@@ -227,9 +237,12 @@ def FindPokemon():
         RemoveColor(Frame, (153, 255, 140), 0.1)
         RemoveColor(Frame, (161, 249, 170), 0.1)
         RemoveColor(Frame, (109, 255, 110), 0.1)
+        RemoveColor(Frame, (118, 239, 186), 0.1)
+        RemoveColor(Frame, (140, 255, 111), 0.1)
         #Day Building    
         RemoveColor(Frame, (109, 244, 160), 0.1)
         RemoveColor(Frame, (189, 255, 173), 0.1)
+        RemoveColor(Frame, (82, 240, 161), 0.1)
         #Day Building + Road Border
         RemoveColor(Frame, (216, 249, 154), 0.1)
         #Day Parc
@@ -275,7 +288,7 @@ def FindPokemon():
     RemoveInSquare(Frame, 91, 44, 23, 37)
     
     #Convert to Black And White
-    BlackOrWhite(Frame)
+    #BlackOrWhite(Frame)
     
     PokemonPosition = FindPokemonPosition(Frame)
     if not PokemonPosition is None:
@@ -302,7 +315,9 @@ def IsCatchSucess():
     img = GetImgFromScreenShot()
     #img = GetImgFromFile("CatchSuccess.png")
     pixdata = img.load()
-    return IsColorInCeil(pixdata[44, 227], (254, 255, 254), 0.01)
+    if IsColorInCeil(pixdata[44, 227], (254, 255, 254), 0.005) and IsColorInCeil(pixdata[22, 518], (247, 255, 245), 0.01):
+        return True
+    return False
     
 def PokemonWorker(PokemonPosition):
     print PokemonPosition
@@ -314,13 +329,14 @@ def PokemonWorker(PokemonPosition):
         if IsPokemonFightOpen() == True:
             bIsPokemonFightOpened = True
             break;
+        #We maybe clicked on a PokeStop...
+        if IsOpenPokestop() == True:
+            print "[!] Holly... This is a Pokestop"
+            PokestopWorker(PokemonPosition)
+            return False
         print "Wait for Pokemon fight..."
     
-    if bIsPokemonFightOpened == False:
-        #We maybe clicked on a PokeStop...
-        if IsOpenPokestop():
-            ClosePokestop()
-            
+    if bIsPokemonFightOpened == False:            
         return False
 
     while True:
@@ -347,11 +363,13 @@ def PokemonWorker(PokemonPosition):
         if bIsOnMap == True:
             print "[!] Pokemon leaved !"
             return False
-    
+    #Close "sucess" Pop-up
     Tap(239, 526)
-    time.sleep(1)
-    Tap(239, 740)
+    
     while IsOnMap() == False:
+        #Close pokemon statistics
+        Tap(239, 740)
+        time.sleep(1)
         print "[!] Waiting return to the map"
     return True
     
@@ -436,12 +454,15 @@ def SetPosition(Position):
 #PokemonPosition = FindPokemon(img)
 #PokeStopPosition = FindPokestop(img)
 #img = GetImgFromScreenShot()
+#FindPokemon()
+#print GetMeanColor(img, 251, 478 )
 #print FindPokemon(img)
 #img.save("OUT.png")
 #print PokemonPosition
 #print IsCatchSucess()
 #CatchPokemon([376, 512])
 #CleanInventory()
+#print IsCatchSucess()
 #sys.exit(0)
 
 Speed = 10
