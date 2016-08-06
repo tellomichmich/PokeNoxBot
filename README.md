@@ -11,8 +11,8 @@ How to use ?
 * Start the Bot
 
 Know bugs:
-* Gym detected as pokemon => (need to change to pokemon detection algorithm)
-* Some Pokestop aren't spinned => (need to improve to Pokestop detection algorithm)
+* Gym detected as pokemon => (need to change the pokemon detection algorithm)
+* Some Pokestop aren't spinned => (need to improve the Pokestop detection algorithm)
 * Lot of shit append => (need to make lot of checks)
 </pre>
 
