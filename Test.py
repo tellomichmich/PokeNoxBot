@@ -190,6 +190,12 @@ def ReturnToMap():
         if IsGymOpen():
             CloseGym()
             return True
+        if IsPokeBoxFull():
+            #Close the pop-up
+            Tap(345, 419)
+            time.sleep(0.5)
+            TransfertPokemon(10)
+            return True
         print "[!] Don't know where we are.... Exiting"
         sys.exit(0)
     return True
@@ -323,9 +329,10 @@ def FindPokemon():
     return PokemonPosition
 
 def ThrowPokeball(Power):
-    #Near 200
-    print "[!] Throw a Pokeball (%d)" % (Power)
-    SwipeTime(236, 780, 236, 400, Power)
+    #Far 100
+    #Near 400
+    print "[!] Throw a Pokeball (%d)" % (100+Power)
+    SwipeTime(236, 780, 236, 100+Power, 200)
 
 def IsPokemonFightOpen():
     img = GetImgFromScreenShot()
@@ -372,14 +379,19 @@ def PokemonWorker(PokemonPosition):
         #This is a big fail maybe a gym detected as Pokemon
         return None
 
+    bIsPokemonHitted = False
     while True:
-        time.sleep(1)
-        #TODO Detect 
-        ThrowPokeball(190+random.randint(-20,20))
+        if bIsPokemonHitted == False:
+            LastPower = random.randint(0,300)
+        else:
+            print "[!] Using last pokeball power"
+        #TODO Detect pokemon distance
+        ThrowPokeball(LastPower)
         time.sleep(1)
         bIsPokemonFightOpened = False
         bIsCatchSuccess = False
         bIsOnMap = False
+        StressCount = 0
         while True:
             if IsPokemonFightOpen() == True:
                 bIsPokemonFightOpened = True
@@ -391,12 +403,18 @@ def PokemonWorker(PokemonPosition):
                 bIsOnMap = True
                 break
             print "[!] #STRESS..."
+            StressCount += 1
         if bIsCatchSuccess == True:
             print "[!] Pokemon captured !"
             break
         if bIsOnMap == True:
             print "[!] Pokemon leaved !"
             return False
+        if StressCount >= 3:
+            bIsPokemonHitted = True
+        else:
+            bIsPokemonHitted = False
+
     #Close "sucess" Pop-up
     Tap(239, 526)
     
@@ -485,6 +503,7 @@ def SetPosition(Position):
     os.system(Command)
     
 def TransfertPokemon(Number):
+    print "[!] Low CP pokemon will be transfered..."]
     if IsOnMap() == False:
         print "[!] Not on the map !"
         return False
@@ -503,6 +522,7 @@ def TransfertPokemon(Number):
     SwipeTime(461, 123, 461, 12000, 300)
     
     for i in range(0, Number):
+        print "[!] Transfering a low CP pokemon"
         #Tap Down Right pokemon
         Tap(83,619)
         time.sleep(0.5)
@@ -524,6 +544,11 @@ def IsGameCrashed():
     img = GetImgFromScreenShot()
     pixdata = img.load()
     return IsColorInCeil(pixdata[214, 410], (0, 0, 0), 0.01)
+    
+def IsPokeBoxFull():
+    img = GetImgFromScreenShot()
+    pixdata = img.load()
+    return IsColorInCeil(pixdata[345, 419], (54, 206, 167), 0.005)
 
 def ClosePokemonFight():
     Tap(53, 65)
