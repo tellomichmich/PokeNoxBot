@@ -87,16 +87,11 @@ def SwipeTime(x1, y1, x2, y2, t):
     Command = "adb shell input swipe %d %d %d %d %d" % (x1, y1, x2, y2, t)
     os.system(Command)
 
-
 def TakePngScreenshot():
     TempPngScreenshot = "TempPngScreenshot"
-    Command = "adb shell \"screencap -p | busybox base64\" >  " + TempPngScreenshot
-    os.system(Command)
-    f = open(TempPngScreenshot, 'rb')
-    PngScreenshotData = f.read()
+    Command = "adb shell \"screencap -p | busybox base64\""
+    PngScreenshotData = os.popen(Command).read()
     PngScreenshotData = base64.b64decode(PngScreenshotData)
-    f.close()
-    os.remove(TempPngScreenshot)
     return PngScreenshotData
  
 def IsColorInCeil(ColorToCheck, RefColor, Ceil):
@@ -185,23 +180,37 @@ def CloseGym():
 #TODO !
 def ReturnToMap():
     if IsOnMap() == False:
-        ClosePokestop()
+        #This is shit !
+        if IsPokemonFightOpen():
+            ClosePokemonFight()
+            return True
+        if IsOpenPokestop():
+            ClosePokestop()
+            return True
+        if IsGymOpen():
+            CloseGym()
+            return True
+        print "[!] Don't know where we are.... Exiting"
+        sys.exit(0)
+    return True
     
 def FindPokestop():
     ReturnToMap();    
     img = GetImgFromScreenShot()
     pixdata = img.load()
-    x, y, xs, ys = (188, 466, 128, 100)
-    SquareSize = 15
+    x, y, xs, ys = (188, 456, 128, 130)
+    SquareSize = 10
     for xr in range(x+(SquareSize/2), x+xs-(SquareSize/2)):
         for yr in range(y+(SquareSize/2), y+ys-(SquareSize/2)):
             MeanColor = GetMeanColor(img, xr, yr, SquareSize)
             #if IsColorInCeil(MeanColor, [42, 172, 255], 0.15):
             #    return [xr+(SquareSize/2), yr+(SquareSize/2)]
-            #if IsColorInCeil(MeanColor, [87, 255, 255], 0.15):
-            #    return [xr+(SquareSize/2), yr+(SquareSize/2)]
+            if IsColorInCeil(MeanColor, [87, 255, 255], 0.05):
+                return [xr+(SquareSize/2), yr+(SquareSize/2)]
             if IsColorInCeil(MeanColor, [64, 227, 252], 0.15):
                 return [xr+(SquareSize/2), yr+(SquareSize/2)]
+    #img.save("OUT_POKESTOP.png")
+    #sys.exit(0)
     return None
     
 def BlackOrWhite(img):
@@ -273,6 +282,7 @@ def FindPokemon():
         RemoveColor(Frame, (3, 91, 134), 0.15)
         #Night Building
         RemoveColor(Frame, (103, 146, 203), 0.1)
+        RemoveColor(Frame, (18, 130, 174), 0.1)
         #Night Water
         RemoveColor(Frame, (14, 71, 205), 0.1)
         
@@ -456,8 +466,12 @@ def PokestopWorker(PokeStopPosition):
         #SpinnedPokeStopCount += 1
         #if SpinnedPokeStopCount%2 == 1:
         #    CleanInventory()
+        return True
     else:
         print "Failed to OpenPokestop"
+        if IsPokemonFightOpen():
+            PokemonWorker(PokeStopPosition)
+    return False
         
 def SetPosition(Position):
     #Command = "adb shell am startservice -a com.incorporateapps.fakegps.ENGAGE --ef lat %f --ef lng %f --activity-single-top --activity-brought-to-front --activity-brought-to-front --debug-log-resolution" % (geo_point[1], geo_point[0])
@@ -499,7 +513,7 @@ def TransfertPokemon(Number):
         time.sleep(0.1)
         #Validation
         Tap(236,452)
-        time.sleep(0.5)
+        time.sleep(1)
     
     #Close Menu
     Tap(236, 736)
@@ -509,7 +523,9 @@ def IsGameCrashed():
     img = GetImgFromScreenShot()
     pixdata = img.load()
     return IsColorInCeil(pixdata[214, 410], (0, 0, 0), 0.01)
-    
+
+def ClosePokemonFight():
+    Tap(53, 65)
 #Core...
 
 
@@ -531,13 +547,15 @@ def IsGameCrashed():
 #CatchPokemon([376, 512])
 #CleanInventory()
 #print IsCatchSucess()
-#TransfertPokemon(3)
+#TransfertPokemon(30)
 #if IsGameCrashed()
 #Start the game
 #    Tap(334, 291)
 #    while IsOnMap() == False:
 #        Tap(235, 457)
 #sys.exit(0)
+
+
 
 Speed = 10
 loop_geo_points = geo_point_from_kml("Levalois.kml", Speed)
@@ -568,6 +586,7 @@ SpinnedPokeStopCount = 0
 while True:
     for geo_point in loop_geo_points:
         if Count%(50/Speed)==0:
+            ReturnToMap()
             print "[!] Looking around..."
             time.sleep(3)
             print "[!] Looking for Pokestop"
@@ -576,7 +595,9 @@ while True:
                 if PokeStopPosition is None:
                     print "[!] No more Pokestop found."
                     break
-                PokestopWorker(PokeStopPosition)
+                if PokestopWorker(PokeStopPosition) == False:
+                    print "[!] Something is strange... go away !"
+                    break
             
             print "[!] Looking for pokemon"
             while True:
