@@ -18,6 +18,7 @@ import re
 assert sys.version_info >= (2,7)
 assert sys.version_info < (3,0)
 
+
 #Rotate a python list
 def rotate_list(l,n):
     return l[-n:] + l[:-n]
@@ -94,6 +95,8 @@ def TakePngScreenshot():
             PngScreenshotData = os.popen(Command).read()
             PngScreenshotData = base64.b64decode(PngScreenshotData)
             break;
+        except KeyboardInterrupt:
+            sys.exit(0)
         except:
             print "[!] Failed to get screen"
     return PngScreenshotData
@@ -205,6 +208,9 @@ def ReturnToMap():
             Tap(345, 419)
             time.sleep(0.5)
             TransfertPokemon(10)
+            return True
+        if IsPokestopTooFar():
+            ClosePokestop()
             return True
         print "[!] Don't know where we are.... Exiting"
         sys.exit(0)
@@ -326,6 +332,7 @@ def FindPokemon():
     #Convert to Black And White
     Frame.save("OUT_COLOR.png")
     BlackRatio = BlackOrWhite(Frame)
+    #print BlackRatio
     if BlackRatio > 11:
         #Too many information on screen !
         print "[!] Too many information on map..."
@@ -381,6 +388,11 @@ def PokemonWorker(PokemonPosition):
             if IsPokemonFightOpen() == True:
                 bIsPokemonFightOpened = True
                 break;
+                
+            if IsGymOpen() == True:
+                print "[!] Holy... This is a Gym"
+                CloseGym()
+                return False
 
             #We maybe clicked on a PokeStop...
             if IsOpenPokestop() == True:
@@ -495,14 +507,17 @@ def PokestopWorker(PokeStopPosition):
                 bIsSpinnedPokestop = True
                 break
             print "[!] Wait for spinned pokestop"
-            
+        
+        bIsBagFull = IsBagFull()
+
         ClosePokestop()
         while IsOnMap() == False:
             print "[!] Waiting return to the map"
-            
-        #SpinnedPokeStopCount += 1
-        #if SpinnedPokeStopCount%2 == 1:
-        #    CleanInventory()
+
+        if bIsBagFull == True:
+            print "[!] The bag is full..."
+            CleanInventory()
+
         return bIsSpinnedPokestop
     else:
         print "[!] Failed to OpenPokestop"
@@ -572,15 +587,25 @@ def IsPokeBoxFull():
     img = GetImgFromScreenShot()
     pixdata = img.load()
     return IsColorInCeil(pixdata[345, 419], (54, 206, 167), 0.005)
+    
+def IsPokestopTooFar():
+    img = GetImgFromScreenShot()
+    pixdata = img.load()
+    return IsColorInCeil(pixdata[379,653], (229, 127, 179), 0.005)
+
+def IsBagFull():
+    img = GetImgFromScreenShot()
+    pixdata = img.load()
+    return IsColorInCeil(pixdata[310, 398], (228, 127, 177), 0.005)
 
 def ClosePokemonFight():
     Tap(53, 65)
 
 #Todo: Take a while...
 def ZoomOut():
-    Command = "adb push Zoomout.scr /sdcard/Zoomout.scr"
+    Command = "adb push Zoomout.txt /sdcard/Zoomout.txt"
     os.system(Command)
-    Command = "adb shell sh /sdcard/Zoomout.scr"
+    Command = "adb shell sh /sdcard/Zoomout.txt"
     os.system(Command)
     
 def CheckApplicationAlive():
@@ -598,6 +623,8 @@ def CheckApplicationAlive():
             print "[!] Waiting for map..."
             Tap(235, 457)
         ZoomOut()
+   
+
     
 #Core...
 
@@ -622,7 +649,7 @@ def CheckApplicationAlive():
 #print IsCatchSucess()
 #TransfertPokemon(30)
 
-
+#print IsBagFull()
 #sys.exit(0)
 
 
