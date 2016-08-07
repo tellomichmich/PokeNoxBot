@@ -21,5 +21,9 @@ Discord:
 
 Video by PassiveModding:
 * https://www.youtube.com/watch?v=A1TovlD-D7c
+
+Video & Tuto by MasterWin:
+* https://www.youtube.com/watch?v=fYsHtOxRP-Q
+* https://www.youtube.com/watch?v=chyE3EcozXA&lc=z120xlsahorteznyb04cgdz5jxz2s1gx1n00k
 </pre>
 
