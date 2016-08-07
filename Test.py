@@ -174,7 +174,7 @@ def SpinPokestop():
 def IsSpinnedPokestop():
     img = GetImgFromScreenShot()
     MeanColor = GetMeanColor(img, 234, 780)
-    if MeanColor[0] > 100:
+    if MeanColor[0] > 80 and MeanColor[1] > 80:
         return True
     # if IsColorInCeil(MeanColor, [140, 100, 240], 0.1):
         # return True
@@ -198,6 +198,9 @@ def ReturnToMap():
             ClosePokemonFight()
             return True
         if IsOpenPokestop():
+            ClosePokestop()
+            return True
+        if IsSpinnedPokestop():
             ClosePokestop()
             return True
         if IsGymOpen():
@@ -382,24 +385,26 @@ def PokemonWorker(PokemonPosition):
     #Check if the click successed
     if IsOnMap() == True:
         print "[!] Click failed !"
-    else:
-        for i in range(0, 5):
-            #time.sleep(1)
-            if IsPokemonFightOpen() == True:
-                bIsPokemonFightOpened = True
-                break;
-                
-            if IsGymOpen() == True:
-                print "[!] Holy... This is a Gym"
-                CloseGym()
-                return False
+        return None
+    
+    #Wait for fight
+    for i in range(0, 5):
+        #time.sleep(1)
+        if IsPokemonFightOpen() == True:
+            bIsPokemonFightOpened = True
+            break;
+            
+        if IsGymOpen() == True:
+            print "[!] Holy... This is a Gym"
+            CloseGym()
+            break
 
-            #We maybe clicked on a PokeStop...
-            if IsOpenPokestop() == True:
-                print "[!] Holy... This is a Pokestop"
-                PokestopWorker(PokemonPosition)
-                return False
-            print "[!] Wait for Pokemon fight..."
+        #We maybe clicked on a PokeStop...
+        if IsOpenPokestop() == True:
+            print "[!] Holy... This is a Pokestop"
+            PokestopWorker(PokemonPosition)
+            break
+        print "[!] Wait for Pokemon fight..."
     
     if bIsPokemonFightOpened == False:  
         #This is a big fail maybe a gym detected as Pokemon
@@ -430,12 +435,15 @@ def PokemonWorker(PokemonPosition):
                 break
             print "[!] #STRESS..."
             StressCount += 1
+            
         if bIsCatchSuccess == True:
             print "[!] Pokemon captured !"
             break
+            
         if bIsOnMap == True:
             print "[!] Pokemon flee !"
             return False
+            
         if StressCount >= 3:
             bIsPokemonHitted = True
         else:
@@ -450,8 +458,6 @@ def PokemonWorker(PokemonPosition):
         time.sleep(1)
         print "[!] Waiting return to the map"
     return True
-    
-    #sys.exit(0)
     
 def CleanInventory():
     print "[!] Clean inventory..."
@@ -492,10 +498,22 @@ def PokestopWorker(PokeStopPosition):
     global SpinnedPokeStopCount
     print "[!] Working on Pokestop %d %d" % (PokeStopPosition[0], PokeStopPosition[1])
     Tap(PokeStopPosition[0], PokeStopPosition[1])
+    time.sleep(0.2)
+    if IsOnMap() == True:
+        print "[!] Click failed !"
+        return False
     bOpenPokestopSuccess = False
-    for i in range(0, 5):
+    for i in range(5):
         if IsOpenPokestop() == True:
             bOpenPokestopSuccess = True
+            break
+        if IsSpinnedPokestop() == True:
+            print "[!] Pokestop already spinned... Something wrong..."
+            ClosePokestop()
+            break
+        if IsPokemonFightOpen():
+            print "[!] Holy... This is a pokemon !"
+            PokemonWorker(PokeStopPosition)
             break
         print "[!] Wait for open pokestop"
             
@@ -518,17 +536,10 @@ def PokestopWorker(PokeStopPosition):
             print "[!] The bag is full..."
             CleanInventory()
 
-        return bIsSpinnedPokestop
-    else:
-        print "[!] Failed to OpenPokestop"
-        if IsPokemonFightOpen():
-            print "[!] Holy... This is a pokemon !"
-            PokemonWorker(PokeStopPosition)
-    return False
+        bOpenPokestopSuccess = bIsSpinnedPokestop
+    return bOpenPokestopSuccess
         
 def SetPosition(Position):
-    #Command = "adb shell am startservice -a com.incorporateapps.fakegps.ENGAGE --ef lat %f --ef lng %f --activity-single-top --activity-brought-to-front --activity-brought-to-front --debug-log-resolution" % (geo_point[1], geo_point[0])
-    #Command = "adb shell gps fix %f %f" % (Position[0], Position[1])
     Command = "adb shell \"setprop persist.nox.gps.longitude %f && setprop persist.nox.gps.latitude %f && setprop persist.nox.gps.altitude %f\"" % (Position[0], Position[1], Position[2])
     #Saved position
     f = open("saved_position.txt", "w")
@@ -556,7 +567,7 @@ def TransfertPokemon(Number):
     SwipeTime(461, 123, 461, 12000, 300)
     
     for i in range(0, Number):
-        print "[!] Transfering a low CP pokemon"
+        print "[!] Transfering a low CP pokemon (%d/%d)" % (i, Number)
         #Tap Down Right pokemon
         Tap(83,619)
         time.sleep(0.5)
