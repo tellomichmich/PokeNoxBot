@@ -10,7 +10,9 @@ import os.path
 import base64
 import datetime
 
-from PIL import Image
+import traceback
+
+from PIL import Image, ImageOps, ImageDraw
 
 from math import ceil, radians, cos, sin, asin, sqrt
 import re
@@ -149,6 +151,7 @@ def GetMeanColor(img, x, y, size=10):
     MeanColor[2] = MeanColor[2]/(size**2)
     return MeanColor
 
+ScreenShotCount = 0
 def GetImgFromScreenShot():
     Screenshot = TakePngScreenshot()
     img = Image.open(io.BytesIO(Screenshot))
@@ -160,85 +163,88 @@ def GetImgFromFile(File):
     img = img.convert("RGB")
     return img
     
+#TODO: class !!!
+img = None
+
+def GetScreen():
+    global img
+    if img == None:
+        img = GetImgFromScreenShot()
+    return img
+ 
+def ClearScreen():
+    global img
+    img = None
+    
 def IsOpenPokestop():
-    img = GetImgFromScreenShot()
-    MeanColor = GetMeanColor(img, 234, 780)
+    img = GetScreen()
+    MeanColor = GetMeanColor(img, 58, 700)
     #print MeanColor
-    if IsColorInCeil(MeanColor, [31, 164, 255], 0.3):
-        return True
-    return False
+    if IsColorInCeil(MeanColor, [31, 164, 255], 0.3) == False:
+        return False
+    return True
  
 def SpinPokestop():
     Swipe(432, 424, 109, 432)
     time.sleep(0.2)
+    ClearScreen()
     
 def IsSpinnedPokestop():
-    img = GetImgFromScreenShot()
+    img = GetScreen()
+    #1.
+    #[210, 133, 255]
+    #[229, 127, 255]
+    #2.
+    #[144, 100, 231]
+    #[225, 125, 255]
+    #Outer
     MeanColor = GetMeanColor(img, 234, 780)
-    if MeanColor[0] > 80 and MeanColor[1] > 80:
+    #Wait for spinned pokestop
+    #print MeanColor
+    if MeanColor[0] > 150 and MeanColor[1] < 150 and MeanColor[2] > 200:
         return True
-    # if IsColorInCeil(MeanColor, [140, 100, 240], 0.1):
-        # return True
-    # if IsColorInCeil(MeanColor, [184, 116, 249], 0.1):
-        # return True
-    # if IsColorInCeil(MeanColor, [211, 116, 249], 0.1):
-        # return True
+    #Inner border
+    MeanColor = GetMeanColor(img, 180, 745)
+    #print MeanColor
+    if MeanColor[0] > 150 and MeanColor[1] < 150 and MeanColor[2] > 200:
+        return True
     return False
      
 def ClosePokestop():
     Tap(236, 736)
-    time.sleep(0.7)
+    time.sleep(1)
+    ClearScreen()
 
 def CloseGym():
     Tap(236, 736)
     time.sleep(0.2)
-    
-#TODO !
-def ReturnToMap():
-    if IsOnMap() == False:
-        #This is shit !
-        if IsPokemonFightOpen():
-            ClosePokemonFight()
-            return True
-        if IsOpenPokestop():
-            ClosePokestop()
-            return True
-        if IsSpinnedPokestop():
-            ClosePokestop()
-            return True
-        if IsGymOpen():
-            CloseGym()
-            return True
-        if IsPokeBoxFull():
-            #Close the pop-up
-            Tap(345, 419)
-            time.sleep(0.5)
-            TransfertPokemon(10)
-            return True
-        if IsPokestopTooFar():
-            ClosePokestop()
-            return True
-        print "[!] Don't know where we are.... Exiting"
-        sys.exit(0)
-    return True
+    ClearScreen()
     
 def FindPokestop():
-    ReturnToMap();    
-    img = GetImgFromScreenShot()
-    pixdata = img.load()
-    x, y, xs, ys = (188, 456, 128, 130)
-    SquareSize = 10
-    for xr in range(x+(SquareSize/2), x+xs-(SquareSize/2)):
-        for yr in range(y+(SquareSize/2), y+ys-(SquareSize/2)):
-            MeanColor = GetMeanColor(img, xr, yr, SquareSize)
-            #if IsColorInCeil(MeanColor, [42, 172, 255], 0.15):
-            #    return [xr+(SquareSize/2), yr+(SquareSize/2)]
-            if IsColorInCeil(MeanColor, [87, 255, 255], 0.05):
-                return [xr+(SquareSize/2), yr+(SquareSize/2)]
-            if IsColorInCeil(MeanColor, [64, 227, 252], 0.15):
-                return [xr+(SquareSize/2), yr+(SquareSize/2)]
-    #img.save("OUT_POKESTOP.png")
-    #sys.exit(0)
+    ReturnToMap()
+    img = GetScreen().copy()
+    #Apply a mask to keep only "Pokestop zone"
+    mask = Image.new('L', (480, 800), 255)
+    draw = ImageDraw.Draw(mask)
+    draw.ellipse((145, 425, 335, 610), fill=0)
+    img.paste((255, 255, 255), mask=mask)
+
+    x, y, xs, ys = (138, 418, 200, 200)
+    #Remove Lured pokestop circle
+    Frame = img.crop(((x, y, x+xs, y+ys)))
+    RemoveColor(Frame, (179, 250, 255), 0.05)
+    Frame.save("OUT_POKESTOP.png")
+    pixdata = Frame.load()
+    SquareSize = 8
+    for xr in range((SquareSize/2), xs-(SquareSize/2)):
+        for yr in range((SquareSize/2), ys-(SquareSize/2)):
+            #Only on blue like pixel
+            if pixdata[xr, yr] != (255, 255, 255) and pixdata[xr, yr][2] > 230:
+                MeanColor = GetMeanColor(Frame, xr, yr, SquareSize)
+                if IsColorInCeil(MeanColor, [87, 255, 255], 0.05):
+                    return [xr+(SquareSize/2)+x, yr+(SquareSize/2)+y]
+                if IsColorInCeil(MeanColor, [64, 227, 252], 0.15):
+                    return [xr+(SquareSize/2)+x, yr+(SquareSize/2)+y]
     return None
     
 def BlackOrWhite(img):
@@ -270,7 +276,8 @@ def IsDay():
 def FindPokemon():
     ReturnToMap(); 
     #img = GetImgFromFile("output.png")
-    img = GetImgFromScreenShot()
+    img = GetScreen().copy()
+    img.save("FIND_POKEMON.png")
     Frame = img.crop(((135, 438, 135+200, 438+150)))
     if IsDay() == True:
         #Day Road
@@ -338,6 +345,8 @@ def FindPokemon():
     #Convert to Black And White
     Frame.save("OUT_COLOR.png")
     BlackRatio = BlackOrWhite(Frame)
+    Frame.save("OUT.png")
+    
     #print BlackRatio
     if BlackRatio > 14:
         #Too many information on screen !
@@ -347,22 +356,23 @@ def FindPokemon():
     if not PokemonPosition is None:
         PokemonPosition[0] += 135
         PokemonPosition[1] += 438
-    Frame.save("OUT.png")
+
     return PokemonPosition
 
 def ThrowPokeball(Power):
     #Far 100
     #Near 400
     print "[!] Throw a Pokeball (%d)" % (100+Power)
-    SwipeTime(236, 780, 236, 100+Power, 200)
+    SwipeTime(236, 780, 236, 30+Power, 200)
+    ClearScreen()
 
 def IsPokemonFightOpen():
-    img = GetImgFromScreenShot()
+    img = GetScreen()
     pixdata = img.load()
     return IsColorInCeil(pixdata[426, 67], (241, 249, 241), 0.01)
  
 def IsGymOpen():
-    img = GetImgFromScreenShot()
+    img = GetScreen()
     pixdata = img.load()
     #White part of the "plateau"
     if IsColorInCeil(pixdata[403, 560], (255, 255, 255), 0.01) == False:
@@ -374,12 +384,12 @@ def IsGymOpen():
     
     
 def IsOnMap():
-    img = GetImgFromScreenShot()
+    img = GetScreen()
     pixdata = img.load()
     return IsColorInCeil(pixdata[237, 703], (255, 57, 69), 0.01)
     
 def IsCatchSucess():
-    img = GetImgFromScreenShot()
+    img = GetScreen()
     #img = GetImgFromFile("CatchSuccess.png")
     pixdata = img.load()
     if IsColorInCeil(pixdata[44, 227], (254, 255, 254), 0.005) and IsColorInCeil(pixdata[22, 518], (247, 255, 245), 0.01):
@@ -390,7 +400,8 @@ def IsCatchSucess():
 def PokemonWorker(PokemonPosition):
     print "[!] Going to fight with %d %d !" % (PokemonPosition[0], PokemonPosition[1])
     Tap(PokemonPosition[0], PokemonPosition[1])
-    time.sleep(0.2)
+    ClearScreen()
+    time.sleep(0.3)
     bIsPokemonFightOpened = False
     #Check if the click successed
     if IsOnMap() == True:
@@ -403,27 +414,26 @@ def PokemonWorker(PokemonPosition):
         if IsPokemonFightOpen() == True:
             bIsPokemonFightOpened = True
             break;
-            
         if IsGymOpen() == True:
             print "[!] Holy... This is a Gym"
             CloseGym()
             break
-
         #We maybe clicked on a PokeStop...
         if IsOpenPokestop() == True:
             print "[!] Holy... This is a Pokestop"
             PokestopWorker(PokemonPosition)
             break
-        
         if IsPokeBoxFull() == True:
             print "[!] The PokeBox is full !"
             #Close the pop-up
             Tap(345, 419)
             time.sleep(0.5)
+            ClearScreen()
             TransfertPokemon(10)
             #Return true to refight the pokemon
             return True
         print "[!] Wait for Pokemon fight..."
+        ClearScreen()
     
     if bIsPokemonFightOpened == False:  
         #This is a big fail maybe a gym detected as Pokemon
@@ -432,7 +442,7 @@ def PokemonWorker(PokemonPosition):
     bIsPokemonHitted = False
     while True:
         if bIsPokemonHitted == False:
-            LastPower = random.randint(0,300)
+            LastPower = random.randint(0,500)
         else:
             print "[!] Using last pokeball power"
         #TODO Detect pokemon distance
@@ -454,6 +464,7 @@ def PokemonWorker(PokemonPosition):
                 break
             print "[!] #STRESS..."
             StressCount += 1
+            ClearScreen()
             
         if bIsCatchSuccess == True:
             print "[!] Pokemon captured !"
@@ -463,19 +474,21 @@ def PokemonWorker(PokemonPosition):
             print "[!] Pokemon flee !"
             return False
             
-        if StressCount >= 3:
+        if StressCount >= 4:
             bIsPokemonHitted = True
         else:
             bIsPokemonHitted = False
 
     #Close "sucess" Pop-up
     Tap(239, 526)
+    ClearScreen()
     
     while IsOnMap() == False:
         #Close pokemon statistics
         Tap(239, 740)
         time.sleep(1)
         print "[!] Waiting return to the map"
+        ClearScreen()
     return True
     
 def CleanInventory():
@@ -487,8 +500,9 @@ def CleanInventory():
     time.sleep(1)
     Tap(372, 651)
     time.sleep(1)
+    ClearScreen()
     while True:
-        img = GetImgFromScreenShot()
+        img = GetScreen()
         FirstObjectColor = GetMeanColor(img, 80, 200)
         print FirstObjectColor
         if IsColorInCeil(FirstObjectColor, [240, 79, 238], 0.01):
@@ -505,19 +519,20 @@ def CleanInventory():
         #Remove this object
         Tap(438, 150)
         time.sleep(1)
-        #1sec for 25 elements
-        SwipeTime(351,355,351,355,1000)
+        #1sec for 20 elements
+        SwipeTime(351, 355, 351, 355, 2000)
         Tap(236, 511)
         time.sleep(0.5)
+        ClearScreen()
     #Close Inventory
     Tap(236, 736)
+    ClearScreen()
     
-SpinnedPokeStopCount = 0
 def PokestopWorker(PokeStopPosition):
-    global SpinnedPokeStopCount
     print "[!] Working on Pokestop %d %d" % (PokeStopPosition[0], PokeStopPosition[1])
     Tap(PokeStopPosition[0], PokeStopPosition[1])
     time.sleep(0.2)
+    ClearScreen()
     if IsOnMap() == True:
         print "[!] Click failed !"
         return False
@@ -535,21 +550,25 @@ def PokestopWorker(PokeStopPosition):
             PokemonWorker(PokeStopPosition)
             break
         print "[!] Wait for open pokestop"
+        ClearScreen()
             
     if bOpenPokestopSuccess == True:
         SpinPokestop()
         bIsSpinnedPokestop = False
-        for i in range(5):
+        for i in range(3):
+            time.sleep(0.3)
             if IsSpinnedPokestop() == True:
                 bIsSpinnedPokestop = True
                 break
             print "[!] Wait for spinned pokestop"
+            ClearScreen()
         
         bIsBagFull = IsBagFull()
-
+        
         ClosePokestop()
         while IsOnMap() == False:
             print "[!] Waiting return to the map"
+            ClearScreen()
 
         if bIsBagFull == True:
             print "[!] The bag is full..."
@@ -565,6 +584,7 @@ def SetPosition(Position):
     f.write("%f,%f,%f" % (Position[1], Position[0], Position[2]))
     f.close()
     os.system(Command)
+    ClearScreen()
     
 def TransfertPokemon(Number):
     print "[!] Low CP pokemon will be transfered..."
@@ -586,7 +606,7 @@ def TransfertPokemon(Number):
     SwipeTime(461, 123, 461, 12000, 300)
     
     for i in range(0, Number):
-        print "[!] Transfering a low CP pokemon (%d/%d)" % (i, Number)
+        print "[!] Transfering a low CP pokemon (%d/%d)" % (i+1, Number)
         #Tap Down Right pokemon
         Tap(83,619)
         time.sleep(0.5)
@@ -606,31 +626,35 @@ def TransfertPokemon(Number):
     time.sleep(1)
     
 def IsGameCrashed():
-    img = GetImgFromScreenShot()
+    img = GetScreen()
     pixdata = img.load()
-    if IsColorInCeil(pixdata[214, 410], (0, 0, 0), 0.01):
+    if IsColorInCeil(pixdata[112, 451], (0, 0, 0), 0.01) and IsColorInCeil(pixdata[372, 449], (0, 0, 0), 0.01):
         return True
-    if IsColorInCeil(pixdata[214, 410], (40, 40, 40), 0.01):
+    if IsColorInCeil(pixdata[112, 451], (40, 40, 40), 0.01) and IsColorInCeil(pixdata[372, 449], (40, 40, 40), 0.01):
+        return True
+    MeanColor = GetMeanColor(img, 334, 291, 10)
+    if IsColorInCeil(MeanColor, [159, 156, 155], 0.01):
         return True
     return False
     
 def IsPokeBoxFull():
-    img = GetImgFromScreenShot()
+    img = GetScreen()
     pixdata = img.load()
     return IsColorInCeil(pixdata[345, 419], (54, 206, 167), 0.005)
     
 def IsPokestopTooFar():
-    img = GetImgFromScreenShot()
+    img = GetScreen()
     pixdata = img.load()
     return IsColorInCeil(pixdata[379,653], (229, 127, 179), 0.005)
 
 def IsBagFull():
-    img = GetImgFromScreenShot()
+    img = GetScreen()
     pixdata = img.load()
     return IsColorInCeil(pixdata[310, 398], (228, 127, 177), 0.005)
 
 def ClosePokemonFight():
     Tap(53, 65)
+    ClearScreen()
 
 #Todo: Take a while...
 def ZoomOut():
@@ -639,21 +663,65 @@ def ZoomOut():
     Command = "adb shell sh /sdcard/Zoomout.txt"
     os.system(Command)
     
-def CheckApplicationAlive():
-    if IsGameCrashed():
-        Tap(240, 444)
+def RestartApplication():
+    Tap(240, 444)
+    time.sleep(0.5)
+    #Start the game
+    Tap(334, 291)
+    while IsOnMap() == False:
+        Tap(235, 457)
+        ClearScreen()
+        print "[!] Waiting for map..."
+        time.sleep(1)
+    #Sometime got a "flash" map
+    time.sleep(2)
+    ClearScreen()
+    while IsOnMap() == False:
+        Tap(235, 457)
+        ClearScreen()
+        print "[!] Waiting for map..."
+        time.sleep(1)
+    ZoomOut()
+    ClearScreen()
+        
+#TODO !
+def ReturnToMap():
+    for i in range(3):
+        if IsOnMap() == True:
+            return True
+        #Sometime got a crash of pokemongo
+        if IsGameCrashed():
+            RestartApplication()
+            return True
+        #This is shit !
+        if IsPokemonFightOpen():
+            ClosePokemonFight()
+            return True
+        if IsOpenPokestop():
+            PokestopWorker([0,0])
+            #ClosePokestop()
+            return True
+        if IsSpinnedPokestop():
+            ClosePokestop()
+            return True
+        if IsGymOpen():
+            CloseGym()
+            return True
+        if IsPokeBoxFull():
+            #Close the pop-up
+            Tap(345, 419)
+            ClearScreen()
+            time.sleep(0.5)
+            TransfertPokemon(10)
+            return True
+        if IsPokestopTooFar():
+            ClosePokestop()
+            return True
         time.sleep(0.5)
-        #Start the game
-        Tap(334, 291)
-        while IsOnMap() == False:
-            print "[!] Waiting for map..."
-            Tap(235, 457)
-        #Sometime got a "flash" map
-        time.sleep(2)
-        while IsOnMap() == False:
-            print "[!] Waiting for map..."
-            Tap(235, 457)
-        ZoomOut()
+        ClearScreen()
+    print "[!] Don't know where we are.... Exiting"
+    sys.exit(0)
+    return False
    
 
     
@@ -715,11 +783,11 @@ SpinnedPokeStopCount = 0
 while True:
     for geo_point in loop_geo_points:
         if Count%(50/Speed)==0:
-            #Sometime got a crash of pokemongo
-            CheckApplicationAlive()
-            ReturnToMap()
+            #Waiting for end of running...
+            time.sleep(4.5)
+            ClearScreen()
             print "[!] Looking around..."
-            time.sleep(3)
+            ReturnToMap()
             while True:
                 print "[!] Looking for Pokestop"
                 PokeStopPosition = FindPokestop()
