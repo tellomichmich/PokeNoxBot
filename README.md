@@ -15,5 +15,8 @@ Know bugs:
 * Some Pokestop aren't spinned => (need to improve the Pokestop detection algorithm)
 * Lot of shit append => (need to make lot of checks)
 * Incense can't be used with this bot
+
+Discord:
+https://discord.gg/xPm5V
 </pre>
 
