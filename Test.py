@@ -170,6 +170,7 @@ def IsOpenPokestop():
  
 def SpinPokestop():
     Swipe(432, 424, 109, 432)
+    time.sleep(0.2)
     
 def IsSpinnedPokestop():
     img = GetImgFromScreenShot()
@@ -186,9 +187,11 @@ def IsSpinnedPokestop():
      
 def ClosePokestop():
     Tap(236, 736)
+    time.sleep(0.7)
 
 def CloseGym():
     Tap(236, 736)
+    time.sleep(0.2)
     
 #TODO !
 def ReturnToMap():
@@ -336,7 +339,7 @@ def FindPokemon():
     Frame.save("OUT_COLOR.png")
     BlackRatio = BlackOrWhite(Frame)
     #print BlackRatio
-    if BlackRatio > 11:
+    if BlackRatio > 14:
         #Too many information on screen !
         print "[!] Too many information on map..."
         return False
@@ -361,7 +364,14 @@ def IsPokemonFightOpen():
 def IsGymOpen():
     img = GetImgFromScreenShot()
     pixdata = img.load()
-    return IsColorInCeil(pixdata[403, 560], (255, 255, 255), 0.01)
+    #White part of the "plateau"
+    if IsColorInCeil(pixdata[403, 560], (255, 255, 255), 0.01) == False:
+        return False
+    #Close cross
+    if IsColorInCeil(pixdata[240, 740], (34, 136, 153), 0.01) == False:
+        return False
+    return True
+    
     
 def IsOnMap():
     img = GetImgFromScreenShot()
@@ -378,7 +388,7 @@ def IsCatchSucess():
 
     
 def PokemonWorker(PokemonPosition):
-    print PokemonPosition
+    print "[!] Going to fight with %d %d !" % (PokemonPosition[0], PokemonPosition[1])
     Tap(PokemonPosition[0], PokemonPosition[1])
     time.sleep(0.2)
     bIsPokemonFightOpened = False
@@ -404,6 +414,15 @@ def PokemonWorker(PokemonPosition):
             print "[!] Holy... This is a Pokestop"
             PokestopWorker(PokemonPosition)
             break
+        
+        if IsPokeBoxFull() == True:
+            print "[!] The PokeBox is full !"
+            #Close the pop-up
+            Tap(345, 419)
+            time.sleep(0.5)
+            TransfertPokemon(10)
+            #Return true to refight the pokemon
+            return True
         print "[!] Wait for Pokemon fight..."
     
     if bIsPokemonFightOpened == False:  
@@ -583,7 +602,8 @@ def TransfertPokemon(Number):
     
     #Close Menu
     Tap(236, 736)
-    time.sleep(0.2)
+    #Wait to be on the map
+    time.sleep(1)
     
 def IsGameCrashed():
     img = GetImgFromScreenShot()
@@ -661,6 +681,7 @@ def CheckApplicationAlive():
 #TransfertPokemon(30)
 
 #print IsBagFull()
+#print IsGymOpen()
 #sys.exit(0)
 
 
