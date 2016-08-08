@@ -273,9 +273,24 @@ def IsDay():
         return True
     return False
     
+def GetDiff(img1, img2):
+    pixdata1 = img1.load()
+    pixdata2 = img2.load()
+    output = img1.copy()
+    pixdataout = output.load()
+    for xr in xrange(img1.size[0]):
+        for yr in xrange(img1.size[1]):
+            if pixdata1[xr, yr] == pixdata2[xr, yr]:
+                pixdataout[xr, yr] = (255, 255, 255)
+            else:
+                #pixdataout[xr, yr] = pixdata1[xr, yr]
+                pixdataout[xr, yr] = (0, 0, 0)
+    output.save("diff.png")
+    
 def FindPokemon():
     ReturnToMap(); 
     #img = GetImgFromFile("output.png")
+    #GetDiff(GetImgFromScreenShot(), GetImgFromScreenShot())
     img = GetScreen().copy()
     img.save("FIND_POKEMON.png")
     Frame = img.crop(((135, 438, 135+200, 438+150)))
@@ -433,6 +448,7 @@ def PokemonWorker(PokemonPosition):
             #Return true to refight the pokemon
             return True
         print "[!] Wait for Pokemon fight..."
+        time.sleep(0.5)
         ClearScreen()
     
     if bIsPokemonFightOpened == False:  
@@ -800,6 +816,8 @@ while True:
             
             while True:
                 print "[!] Looking for pokemon"
+                #Clearing the screen because PokestopWorker can be long...
+                ClearScreen()
                 PokemonPosition = FindPokemon()
                 if PokemonPosition == False:
                     print "[!] This place is near a Gym !"
