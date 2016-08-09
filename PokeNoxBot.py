@@ -12,7 +12,7 @@ import datetime
 
 import traceback
 
-from PIL import Image, ImageOps, ImageDraw
+from PIL import Image, ImageOps, ImageDraw, ImageChops
 
 from math import ceil, radians, cos, sin, asin, sqrt
 import re
@@ -54,9 +54,9 @@ def geo_walk_to(speed, lat1, lon1, alt1, lat2, lon2, alt2):
             new_alt = alt1 + (dAlt * (i+1))
             #print "%f, %f, %f" % (new_lat, new_lon, new_alt)
             travel_geo_points.append([new_lat, new_lon, new_alt])
-    else:
+    #else:
         #print "%f, %f, %f" % (new_lat, new_lon, new_alt)
-        travel_geo_points.append([new_lat, new_lon, new_alt])
+    #    travel_geo_points.append([new_lat, new_lon, new_alt])
     return travel_geo_points
 
 def geo_point_from_kml(kml_filename, speed):
@@ -79,21 +79,21 @@ def geo_point_from_kml(kml_filename, speed):
     return loop_geo_points
 
 def Tap(x, y):
-    Command = "adb shell input tap %d %d" % (x, y)
+    Command = "bin\\adb.exe shell input tap %d %d" % (x, y)
     os.system(Command)
 
 def Swipe(x1, y1, x2, y2):
-    Command = "adb shell input swipe %d %d %d %d " % (x1, y1, x2, y2)
+    Command = "bin\\adb.exe shell input swipe %d %d %d %d " % (x1, y1, x2, y2)
     os.system(Command)
     
 def SwipeTime(x1, y1, x2, y2, t):
-    Command = "adb shell input swipe %d %d %d %d %d" % (x1, y1, x2, y2, t)
+    Command = "bin\\adb.exe shell input swipe %d %d %d %d %d" % (x1, y1, x2, y2, t)
     os.system(Command)
 
 def TakePngScreenshot():
     while True:
         try:
-            Command = "adb shell \"screencap -p | busybox base64\""
+            Command = "bin\\adb.exe shell \"screencap -p | busybox base64\""
             PngScreenshotData = os.popen(Command).read()
             PngScreenshotData = base64.b64decode(PngScreenshotData)
             break;
@@ -153,9 +153,12 @@ def GetMeanColor(img, x, y, size=10):
 
 ScreenShotCount = 0
 def GetImgFromScreenShot():
+    global ScreenShotCount
+    ScreenShotCount += 1
     Screenshot = TakePngScreenshot()
     img = Image.open(io.BytesIO(Screenshot))
     img = img.convert("RGB")
+    #img.save("tmp/%04d.png" % (ScreenShotCount))
     return img
     
 def GetImgFromFile(File):               
@@ -180,7 +183,7 @@ def IsOpenPokestop():
     img = GetScreen()
     MeanColor = GetMeanColor(img, 58, 700)
     #print MeanColor
-    if IsColorInCeil(MeanColor, [31, 164, 255], 0.3) == False:
+    if IsColorInCeil(MeanColor, [31, 164, 255], 0.35) == False:
         return False
     return True
  
@@ -191,16 +194,8 @@ def SpinPokestop():
     
 def IsSpinnedPokestop():
     img = GetScreen()
-    #1.
-    #[210, 133, 255]
-    #[229, 127, 255]
-    #2.
-    #[144, 100, 231]
-    #[225, 125, 255]
     #Outer
     MeanColor = GetMeanColor(img, 234, 780)
-    #Wait for spinned pokestop
-    #print MeanColor
     if MeanColor[0] > 150 and MeanColor[1] < 150 and MeanColor[2] > 200:
         return True
     #Inner border
@@ -209,7 +204,7 @@ def IsSpinnedPokestop():
     if MeanColor[0] > 150 and MeanColor[1] < 150 and MeanColor[2] > 200:
         return True
     return False
-     
+    
 def ClosePokestop():
     Tap(236, 736)
     time.sleep(1)
@@ -224,12 +219,14 @@ def FindPokestop():
     ReturnToMap()
     img = GetScreen().copy()
     #Apply a mask to keep only "Pokestop zone"
+    PokeStopZone = (138, 418, 200, 200)
     mask = Image.new('L', (480, 800), 255)
     draw = ImageDraw.Draw(mask)
-    draw.ellipse((145, 425, 335, 610), fill=0)
+    draw.ellipse((PokeStopZone[0],PokeStopZone[1],PokeStopZone[0]+PokeStopZone[2],PokeStopZone[1]+PokeStopZone[3]) , fill=0)
     img.paste((255, 255, 255), mask=mask)
+    img.save("OUT_POKESTOP.png")
 
-    x, y, xs, ys = (138, 418, 200, 200)
+    x, y, xs, ys = PokeStopZone
     #Remove Lured pokestop circle
     Frame = img.crop(((x, y, x+xs, y+ys)))
     RemoveColor(Frame, (179, 250, 255), 0.05)
@@ -256,123 +253,111 @@ def BlackOrWhite(img):
                pixdata[xr, yr] = (0, 0, 0)
                BlackCount += 1
     return (BlackCount/(img.size[0]*img.size[1]))*100
-
-def FindPokemonPosition(img):
-    SquareSize = 7
-    for xr in range(SquareSize/2, img.size[0]-(SquareSize/2)):
-        for yr in range(SquareSize/2, img.size[1]-(SquareSize/2)):
-            FalsePositiv = GetMeanColor(img, xr, yr, SquareSize)
-            Score = (FalsePositiv[0]+FalsePositiv[1]+FalsePositiv[2])/3
-            if Score < 2:
-                return [xr, yr]
-    return None
     
 def IsDay():
     Hour = datetime.datetime.now().hour  
     if Hour > 7 and Hour < 19:
         return True
     return False
-    
-def GetDiff(img1, img2):
-    pixdata1 = img1.load()
-    pixdata2 = img2.load()
-    output = img1.copy()
-    pixdataout = output.load()
-    for xr in xrange(img1.size[0]):
-        for yr in xrange(img1.size[1]):
-            if pixdata1[xr, yr] == pixdata2[xr, yr]:
-                pixdataout[xr, yr] = (255, 255, 255)
-            else:
-                #pixdataout[xr, yr] = pixdata1[xr, yr]
-                pixdataout[xr, yr] = (0, 0, 0)
-    output.save("diff.png")
+
+def RemoveColorList(img, ColorList):
+    pixdata = img.load()
+    for x in xrange(img.size[0]):
+        for y in xrange(img.size[1]):
+            if pixdata[x, y] in ColorList:
+                pixdata[x, y] = (255, 255, 255)
+                
+def FindPokemonPosition(img, SquareSize=4):
+    pixdata = img.load()
+    for xr in range(SquareSize/2, img.size[0]-(SquareSize/2)):
+        for yr in range(SquareSize/2, img.size[1]-(SquareSize/2)):
+            if pixdata[xr, yr] == (0, 0, 0):
+                FalsePositiv = GetMeanColor(img, xr, yr, SquareSize)
+                Score = (FalsePositiv[0]+FalsePositiv[1]+FalsePositiv[2])/3
+                if Score < 40:
+                    return [xr, yr]
+    return None
     
 def FindPokemon():
-    ReturnToMap(); 
-    #img = GetImgFromFile("output.png")
-    #GetDiff(GetImgFromScreenShot(), GetImgFromScreenShot())
+    ReturnToMap();
+    #TestFindPokemon()
     img = GetScreen().copy()
-    img.save("FIND_POKEMON.png")
-    Frame = img.crop(((135, 438, 135+200, 438+150)))
-    if IsDay() == True:
+    #Remove the player
+    RemoveInSquare(img, 227, 482, 22, 40)
+    #Remove the Experience notification
+    RemoveInSquare(img, 24, 600, 115, 70)
+    
+    #Apply amask to keep only "Pokemon zone"
+    mask = Image.new('L', (480, 800), 255)
+    draw = ImageDraw.Draw(mask)
+    PokemonZone = (65, 420, 135+300, 438+250)
+    draw.ellipse(PokemonZone, fill=0)
+    img.paste((255, 255, 255), mask=mask)
+    
+    Frame = img.crop((PokemonZone))
+    Frame = ImageOps.posterize(Frame, 2)
+    
+    ColorBlackList = []
+    if IsDay():
         #Day Road
-        RemoveColor(Frame, (86, 162, 151), 0.1)
-        #Day Road Border
-        RemoveColor(Frame, (242, 255, 139), 0.1)
-        #Day Green    
-        RemoveColor(Frame, (153, 255, 140), 0.1)
-        RemoveColor(Frame, (161, 249, 170), 0.1)
-        RemoveColor(Frame, (109, 255, 110), 0.1)
-        RemoveColor(Frame, (118, 239, 186), 0.1)
-        RemoveColor(Frame, (140, 255, 111), 0.1)
-        RemoveColor(Frame, (150, 242, 198), 0.1)
-        #Day Building    
-        RemoveColor(Frame, (109, 244, 160), 0.1)
-        RemoveColor(Frame, (189, 255, 173), 0.1)
-        RemoveColor(Frame, (82, 240, 161), 0.1)
-        #Day Building + Road Border
-        RemoveColor(Frame, (216, 249, 154), 0.1)
-        #Day Parc
-        RemoveColor(Frame, (4, 173, 141), 0.3)
-        #Day Water
-        RemoveColor(Frame, (27, 137, 217), 0.1)
+        ColorBlackList.append((64, 128, 128))
+        ColorBlackList.append((0, 128, 128))
+        #Green
+        ColorBlackList.append((0, 192, 128))
+        ColorBlackList.append((128, 192, 128))
+        ColorBlackList.append((128, 192, 64))
+        ColorBlackList.append((64, 192, 128))
+        #Day Road Boarder
+        ColorBlackList.append((192, 192, 128))
     else:
-        #Night Road
-        RemoveColor(Frame, (44, 85, 144), 0.1)
-        #Night Road + Building
-        RemoveColor(Frame, (44, 130, 184), 0.1)
-        #Night Road Border
-        RemoveColor(Frame, (186, 203, 137), 0.1)
         #Green
-        RemoveColor(Frame, (69, 134, 101), 0.1)
-        RemoveColor(Frame, (54, 161, 157), 0.1)
-        #Green
-        RemoveColor(Frame, (82, 135, 142), 0.15)
-        #Park
-        RemoveColor(Frame, (3, 91, 134), 0.15)
-        #Night Building
-        RemoveColor(Frame, (103, 146, 203), 0.1)
-        RemoveColor(Frame, (18, 130, 174), 0.1)
-        #Night Water
-        RemoveColor(Frame, (14, 71, 205), 0.1)
+        ColorBlackList.append((64, 128, 128))
+        ColorBlackList.append((0, 128, 128))
+        ColorBlackList.append((0, 64, 128))
+        ColorBlackList.append((0, 64, 64))
+        #Day Road Boarder
+        ColorBlackList.append((128, 128, 128))
         
+    #Spinned Pokestop 
+    ColorBlackList.append((192, 128, 192))
+    ColorBlackList.append((64, 64, 192))
+    ColorBlackList.append((128, 64, 192))
+    #Lured Pokestop 
+    ColorBlackList.append((192, 64, 192))
+    #Pokestop 
+    ColorBlackList.append((0, 128, 192))
+    ColorBlackList.append((64, 192, 192))
+    ColorBlackList.append((0, 192, 192))
+    ColorBlackList.append((0, 64, 192))
+    #Lured Pokestop Circle
+    ColorBlackList.append((128, 192, 192))
+    #Lured Pokestop Flowers
+    ColorBlackList.append((192, 192, 192))
+    #Green rustles
+    ColorBlackList.append((0, 128, 64))
+    ColorBlackList.append((128, 128, 64))
+    ColorBlackList.append((128, 192, 128))
+    ColorBlackList.append((0, 192, 0))
+    ColorBlackList.append((128, 192, 0))
+    ColorBlackList.append((0, 64, 0))
+    ColorBlackList.append((64, 192, 0))
+    ColorBlackList.append((64, 192, 128))
+    ColorBlackList.append((0, 128, 0))
     
-    #PokeStop
-    #RemoveColor(Frame, (42, 172, 255), 0.1)
-    #RemoveColor(Frame, (87, 255, 255), 0.2)
-    #RemoveColor(Frame, (35, 202, 255), 0.1)
-    #RemoveColor(Frame, (35, 202, 255), 0.1)
-    RemoveColor(Frame, (32, 137, 245), 0.1)
-    #PokeStop Circle
-    #RemoveColor(Frame, (177, 248, 255), 0.1)
-    RemoveBlue(Frame, 254)
+    RemoveColorList(Frame, ColorBlackList)
     
-    #SpinnedPokeStop
-    RemoveColor(Frame, (192, 115, 248), 0.1)
-    RemoveColor(Frame, (154, 103, 234), 0.1)
-    RemoveColor(Frame, (102, 87, 217), 0.1)
-    #SpinnedPokeStop foot
-    RemoveColor(Frame, (205, 186, 254), 0.1)
-  
-    #Remove player
-    RemoveInSquare(Frame, 91, 44, 23, 37)
-    
-    #Convert to Black And White
     Frame.save("OUT_COLOR.png")
     BlackRatio = BlackOrWhite(Frame)
-    Frame.save("OUT.png")
-    
-    #print BlackRatio
-    if BlackRatio > 14:
-        #Too many information on screen !
-        print "[!] Too many information on map..."
-        return False
-    PokemonPosition = FindPokemonPosition(Frame)
-    if not PokemonPosition is None:
-        PokemonPosition[0] += 135
-        PokemonPosition[1] += 438
+    Frame.save("OUT_BW.png")
+    #Search for big Pokemon before small one
+    for i in range(10, 2, -2):
+        PokemonPosition = FindPokemonPosition(Frame, i)
+        if not PokemonPosition is None:
+            PokemonPosition[0] += PokemonZone[0]
+            PokemonPosition[1] += PokemonZone[1]
+            return PokemonPosition
 
-    return PokemonPosition
+    return None
 
 def ThrowPokeball(Power):
     #Far 100
@@ -438,6 +423,10 @@ def PokemonWorker(PokemonPosition):
             print "[!] Holy... This is a Pokestop"
             PokestopWorker(PokemonPosition)
             break
+        if IsSpinnedPokestop() == True:
+            print "[!] Holy... This is a Spinned Pokestop"
+            ClosePokestop()
+            break
         if IsPokeBoxFull() == True:
             print "[!] The PokeBox is full !"
             #Close the pop-up
@@ -489,6 +478,10 @@ def PokemonWorker(PokemonPosition):
         if bIsOnMap == True:
             print "[!] Pokemon flee !"
             return False
+        
+        if StressCount == 0:
+            print "[!] No more pokeball !"
+            return None
             
         if StressCount >= 4:
             bIsPokemonHitted = True
@@ -527,6 +520,8 @@ def CleanInventory():
             print "[!] Lot of Super Potions will be dropped !"
         elif IsColorInCeil(FirstObjectColor, [251, 228, 218], 0.01):
             print "[!] Lot of Hyper Potions will be dropped !"
+        elif IsColorInCeil(FirstObjectColor, [14, 157, 239], 0.01):
+            print "[!] Lot of Max Potions will be dropped !"
         elif IsColorInCeil(FirstObjectColor, [254, 224, 96], 0.01):
             print "[!] Lot of Revives will be dropped !"
         else:
@@ -554,6 +549,10 @@ def PokestopWorker(PokeStopPosition):
         return False
     bOpenPokestopSuccess = False
     for i in range(5):
+        if IsPokestopTooFar() == True:
+            print "[!] Pokestop is too far !"
+            ClosePokestop()
+            break
         if IsOpenPokestop() == True:
             bOpenPokestopSuccess = True
             break
@@ -594,9 +593,9 @@ def PokestopWorker(PokeStopPosition):
     return bOpenPokestopSuccess
         
 def SetPosition(Position):
-    Command = "adb shell \"setprop persist.nox.gps.longitude %f && setprop persist.nox.gps.latitude %f && setprop persist.nox.gps.altitude %f\"" % (Position[0], Position[1], Position[2])
+    Command = "bin\\adb.exe shell \"setprop persist.nox.gps.longitude %f && setprop persist.nox.gps.latitude %f && setprop persist.nox.gps.altitude %f\"" % (Position[0], Position[1], Position[2])
     #Saved position
-    f = open("saved_position.txt", "w")
+    f = open("tmp/saved_position.txt", "w")
     f.write("%f,%f,%f" % (Position[1], Position[0], Position[2]))
     f.close()
     os.system(Command)
@@ -657,7 +656,8 @@ def IsPokeBoxFull():
     img = GetScreen()
     pixdata = img.load()
     return IsColorInCeil(pixdata[345, 419], (54, 206, 167), 0.005)
-    
+
+#TODO: This shit is language dependent !
 def IsPokestopTooFar():
     img = GetScreen()
     pixdata = img.load()
@@ -674,9 +674,9 @@ def ClosePokemonFight():
 
 #Todo: Take a while...
 def ZoomOut():
-    Command = "adb push Zoomout.txt /sdcard/Zoomout.txt"
+    Command = "bin\\adb.exe push bin\\Zoomout.txt /sdcard/Zoomout.txt"
     os.system(Command)
-    Command = "adb shell sh /sdcard/Zoomout.txt"
+    Command = "bin\\adb.exe shell sh /sdcard/Zoomout.txt"
     os.system(Command)
     
 def RestartApplication():
@@ -711,14 +711,18 @@ def ReturnToMap():
             return True
         #This is shit !
         if IsPokemonFightOpen():
-            ClosePokemonFight()
+            PokemonWorker([0,0])
+            #No need to close
             return True
-        if IsOpenPokestop():
-            PokestopWorker([0,0])
-            #ClosePokestop()
+        if IsPokestopTooFar():
+            ClosePokestop()
             return True
         if IsSpinnedPokestop():
             ClosePokestop()
+            return True
+        if IsOpenPokestop():
+            PokestopWorker([0,0])
+            #No need to close, this is close by PokestopWorker
             return True
         if IsGymOpen():
             CloseGym()
@@ -730,10 +734,11 @@ def ReturnToMap():
             time.sleep(0.5)
             TransfertPokemon(10)
             return True
-        if IsPokestopTooFar():
-            ClosePokestop()
-            return True
         time.sleep(0.5)
+        #Last Hope... medals,...
+        if i == 2:
+            Tap(0, 0)
+            time.sleep(1)
         ClearScreen()
     print "[!] Don't know where we are.... Exiting"
     sys.exit(0)
@@ -766,16 +771,17 @@ def ReturnToMap():
 
 #print IsBagFull()
 #print IsGymOpen()
+#print IsOpenPokestop()
 #sys.exit(0)
 
 
 
-Speed = 10
+Speed = 20
 loop_geo_points = geo_point_from_kml("Levalois.kml", Speed)
 
 #Searching for the nearest point 
-if os.path.isfile("saved_position.txt"):
-    f = open("saved_position.txt", 'r')
+if os.path.isfile("tmp/saved_position.txt"):
+    f = open("tmp/saved_position.txt", 'r')
     line = f.read().strip()
     if re.match(".*,.*,.*", line):
         saved_position = line.split(',')
@@ -796,14 +802,21 @@ if os.path.isfile("saved_position.txt"):
 
 Count = 0
 SpinnedPokeStopCount = 0
+#Set Initial position
+SetPosition(loop_geo_points[0])
+Experience = 0;
+StartTime = time.time()
 while True:
     for geo_point in loop_geo_points:
         if Count%(50/Speed)==0:
+            SetPosition(geo_point)
             #Waiting for end of running...
             time.sleep(4.5)
             ClearScreen()
             print "[!] Looking around..."
             ReturnToMap()
+            
+            #Pokestop first to grab some pokeball
             while True:
                 print "[!] Looking for Pokestop"
                 PokeStopPosition = FindPokestop()
@@ -811,8 +824,10 @@ while True:
                     print "[!] No more Pokestop found."
                     break
                 if PokestopWorker(PokeStopPosition) == False:
-                    print "[!] Something is strange... go away (Soft-ban?)!"
+                    print "[!] Something failed..."
                     break
+                else:
+                    Experience += 50
             
             while True:
                 print "[!] Looking for pokemon"
@@ -826,13 +841,17 @@ while True:
                     print "[!] No more Pokemon not found."
                     break
                 PokemonWorkerReturn = PokemonWorker(PokemonPosition)
+                if PokemonWorkerReturn == None:
+                    print "[!] This place is near a Gym ?"
+                    break
                 if PokemonWorkerReturn == False:
                     if IsGymOpen() == True:
                         CloseGym()
                         print "[!] This place is near a Gym !"
                         break
-                if PokemonWorkerReturn == None:
-                    print "[!] This place is near a Gym ?"
-                    break
+                else:
+                    Experience += 100
+            #Print estimated exprience for kikoo-time !
+            print "[!] ~%d Exp/h" % ((Experience/(time.time()-StartTime))*60*60)
         Count += 1
-        SetPosition(geo_point)
+        #SetPosition(geo_point)
