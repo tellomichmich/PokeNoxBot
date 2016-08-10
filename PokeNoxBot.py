@@ -744,7 +744,7 @@ def RestartApplication():
         
 #TODO !
 def ReturnToMap():
-    for i in range(3):
+    for i in range(4):
         if IsOnMap() == True:
             return True
         #Sometime got a crash of pokemongo
@@ -779,7 +779,9 @@ def ReturnToMap():
         time.sleep(0.5)
         #Last Hope... medals,...
         if i == 2:
+            print "[!] LAST HOPE TO ESCAPE !"
             Tap(0, 0)
+            ClosePokestop()
             time.sleep(1)
         ClearScreen()
     print "[!] Don't know where we are.... Exiting"
