@@ -21,6 +21,8 @@ assert sys.version_info >= (2,7)
 assert sys.version_info < (3,0)
 
 
+EvolveList = ["Pidgey", "Rattata", "Weedle"]
+
 #Rotate a python list
 def rotate_list(l,n):
     return l[-n:] + l[:-n]
@@ -508,7 +510,6 @@ def PokemonWorker(PokemonPosition):
         ClearScreen()
         
     #We are here on the pokemon statistics
-    EvolveList = ["Pidgey", "Rattata", "Weedle"]
     PokemonName = GetPokemonName()
     print "[!] This is a %s" % (PokemonName)
     if PokemonName in EvolveList:
@@ -670,7 +671,7 @@ def TransferLowCPPokemons(Number):
         Tap(83,619)
         time.sleep(0.5)
         ClearScreen()
-        if IsEvolvable():
+        if GetPokemonName in EvolveList:
             EvolvePokemon()
             ClosePokemon()
         else:
