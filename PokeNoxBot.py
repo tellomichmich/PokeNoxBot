@@ -181,11 +181,17 @@ def ClearScreen():
     
 def IsOpenPokestop():
     img = GetScreen()
-    MeanColor = GetMeanColor(img, 58, 700)
+    #Outer
+    MeanColor = GetMeanColor(img, 234, 780)
+    print MeanColor
+    if MeanColor[0] < 150 and MeanColor[1] < 230 and MeanColor[2] > 240:
+        return True
+    #Inner border
+    MeanColor = GetMeanColor(img, 180, 745)
     #print MeanColor
-    if IsColorInCeil(MeanColor, [31, 164, 255], 0.35) == False:
-        return False
-    return True
+    if MeanColor[0] < 150 and MeanColor[1] < 230 and MeanColor[2] > 240:
+        return True
+    return False
  
 def SpinPokestop():
     Swipe(432, 424, 109, 432)
@@ -481,6 +487,7 @@ def PokemonWorker(PokemonPosition):
         
         if StressCount == 0:
             print "[!] No more pokeball !"
+            ClosePokemonFight()
             return None
             
         if StressCount >= 4:
@@ -564,6 +571,9 @@ def PokestopWorker(PokeStopPosition):
             print "[!] Holy... This is a pokemon !"
             PokemonWorker(PokeStopPosition)
             break
+        if IsGymOpen():
+            print "[!] Holy... This is a Gym"
+            CloseGym()
         print "[!] Wait for open pokestop"
         ClearScreen()
             
@@ -612,10 +622,11 @@ def TransfertPokemon(Number):
     Tap(104, 659)
     time.sleep(0.2)
     #Tap CP
-    Tap(415, 742)
+    Tap(415, 742) 
     time.sleep(0.1)
     #Select CP
-    Tap(414, 631)
+    #Tap(414, 631)#0.310
+    Tap(415, 650) #0.33.0
     time.sleep(0.1)
     #ScrollDown
     SwipeTime(461, 123, 461, 12000, 300)
@@ -632,7 +643,8 @@ def TransfertPokemon(Number):
         Tap(423, 651)
         time.sleep(0.1)
         #Validation
-        Tap(236,452)
+        #Tap(236,452) #0.31
+        Tap(240, 500) #0.33
         time.sleep(1)
     
     #Close Menu
@@ -809,12 +821,12 @@ StartTime = time.time()
 while True:
     for geo_point in loop_geo_points:
         if Count%(50/Speed)==0:
+            ReturnToMap()
             SetPosition(geo_point)
             #Waiting for end of running...
             time.sleep(4.5)
             ClearScreen()
             print "[!] Looking around..."
-            ReturnToMap()
             
             #Pokestop first to grab some pokeball
             while True:
