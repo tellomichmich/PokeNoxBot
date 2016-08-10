@@ -433,7 +433,7 @@ def PokemonWorker(PokemonPosition):
         #We maybe clicked on a PokeStop...
         if IsOpenPokestop() == True:
             print "[!] Holy... This is a Pokestop"
-            PokestopWorker(PokemonPosition)
+            PokestopWorker([0,0])
             break
         if IsSpinnedPokestop() == True:
             print "[!] Holy... This is a Spinned Pokestop"
@@ -589,7 +589,7 @@ def PokestopWorker(PokeStopPosition):
             break
         if IsPokemonFightOpen():
             print "[!] Holy... This is a pokemon !"
-            PokemonWorker(PokeStopPosition)
+            PokemonWorker([0,0])
             break
         if IsGymOpen():
             print "[!] Holy... This is a Gym"
@@ -671,7 +671,7 @@ def TransferLowCPPokemons(Number):
         Tap(83,619)
         time.sleep(0.5)
         ClearScreen()
-        if GetPokemonName in EvolveList:
+        if GetPokemonName() in EvolveList:
             EvolvePokemon()
             ClosePokemon()
         else:
@@ -774,7 +774,7 @@ def ReturnToMap():
             Tap(345, 419)
             ClearScreen()
             time.sleep(0.5)
-            TransferLowCPPokemon(10)
+            TransferLowCPPokemon(50)
             return True
         time.sleep(0.5)
         #Last Hope... medals,...
