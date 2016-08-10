@@ -225,7 +225,7 @@ def FindPokestop():
     ReturnToMap()
     img = GetScreen().copy()
     #Apply a mask to keep only "Pokestop zone"
-    PokeStopZone = (138, 418, 200, 180)
+    PokeStopZone = (140, 420, 200, 180)
     mask = Image.new('L', (480, 800), 255)
     draw = ImageDraw.Draw(mask)
     draw.ellipse((PokeStopZone[0],PokeStopZone[1],PokeStopZone[0]+PokeStopZone[2],PokeStopZone[1]+PokeStopZone[3]) , fill=0)
@@ -313,6 +313,7 @@ def FindPokemon():
         ColorBlackList.append((128, 192, 128))
         ColorBlackList.append((128, 192, 64))
         ColorBlackList.append((64, 192, 128))
+        ColorBlackList.append((64, 192, 64))
         #Day Road Boarder
         ColorBlackList.append((192, 192, 128))
     else:
@@ -669,7 +670,11 @@ def TransferLowCPPokemons(Number):
         Tap(83,619)
         time.sleep(0.5)
         ClearScreen()
-        TransferPokemon()
+        if IsEvolvable():
+            EvolvePokemon()
+            ClosePokemon()
+        else:
+            TransferPokemon()
     
     #Close Menu
     Tap(236, 736)
