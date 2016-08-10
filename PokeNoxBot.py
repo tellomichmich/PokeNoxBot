@@ -225,7 +225,7 @@ def FindPokestop():
     ReturnToMap()
     img = GetScreen().copy()
     #Apply a mask to keep only "Pokestop zone"
-    PokeStopZone = (138, 418, 200, 200)
+    PokeStopZone = (138, 418, 200, 180)
     mask = Image.new('L', (480, 800), 255)
     draw = ImageDraw.Draw(mask)
     draw.ellipse((PokeStopZone[0],PokeStopZone[1],PokeStopZone[0]+PokeStopZone[2],PokeStopZone[1]+PokeStopZone[3]) , fill=0)
@@ -316,12 +316,15 @@ def FindPokemon():
         #Day Road Boarder
         ColorBlackList.append((192, 192, 128))
     else:
+        #Road
+        ColorBlackList.append((64, 128, 192))
         #Green
         ColorBlackList.append((64, 128, 128))
         ColorBlackList.append((0, 128, 128))
         ColorBlackList.append((0, 64, 128))
         ColorBlackList.append((0, 64, 64))
-        #Day Road Boarder
+        ColorBlackList.append((64, 128, 64))
+        #Night Road Boarder
         ColorBlackList.append((128, 128, 128))
         
     #Spinned Pokestop 
@@ -439,7 +442,7 @@ def PokemonWorker(PokemonPosition):
             Tap(345, 419)
             time.sleep(0.5)
             ClearScreen()
-            TransfertPokemon(10)
+            TransferLowCPPokemons(10)
             #Return true to refight the pokemon
             return True
         print "[!] Wait for Pokemon fight..."
@@ -498,14 +501,29 @@ def PokemonWorker(PokemonPosition):
     #Close "sucess" Pop-up
     Tap(239, 526)
     ClearScreen()
+    time.sleep(0.2)
+    while IsPokemonOpen() == False:
+        time.sleep(0.5)
+        ClearScreen()
+        
+    #We are here on the pokemon statistics
+    EvolveList = ["Pidgey", "Rattata", "Weedle"]
+    PokemonName = GetPokemonName()
+    print "[!] This is a %s" % (PokemonName)
+    if PokemonName in EvolveList:
+        EvolvePokemon()
+    
+    ClosePokemon()
     
     while IsOnMap() == False:
-        #Close pokemon statistics
-        Tap(239, 740)
-        time.sleep(1)
         print "[!] Waiting return to the map"
+        time.sleep(1)
         ClearScreen()
     return True
+
+def ClosePokemon():
+    Tap(239, 740)
+    ClearScreen()
     
 def CleanInventory():
     print "[!] Clean inventory..."
@@ -611,7 +629,21 @@ def SetPosition(Position):
     os.system(Command)
     ClearScreen()
     
-def TransfertPokemon(Number):
+def TransferPokemon():
+    if IsPokemonOpen() == False:
+        return False
+    #Options
+    Tap(418, 741)
+    time.sleep(0.1)
+    #Tap Transfert
+    Tap(423, 651)
+    time.sleep(0.1)
+    #Validation
+    #Tap(236,452) #0.31
+    Tap(240, 500) #0.33
+    time.sleep(1)
+    
+def TransferLowCPPokemons(Number):
     print "[!] Low CP pokemon will be transfered..."
     if IsOnMap() == False:
         print "[!] Not on the map !"
@@ -633,19 +665,11 @@ def TransfertPokemon(Number):
     
     for i in range(0, Number):
         print "[!] Transfering a low CP pokemon (%d/%d)" % (i+1, Number)
-        #Tap Down Right pokemon
+        #Tap Down Left pokemon
         Tap(83,619)
         time.sleep(0.5)
-        #Options
-        Tap(418, 741)
-        time.sleep(0.1)
-        #Tap Transfert
-        Tap(423, 651)
-        time.sleep(0.1)
-        #Validation
-        #Tap(236,452) #0.31
-        Tap(240, 500) #0.33
-        time.sleep(1)
+        ClearScreen()
+        TransferPokemon()
     
     #Close Menu
     Tap(236, 736)
@@ -744,7 +768,7 @@ def ReturnToMap():
             Tap(345, 419)
             ClearScreen()
             time.sleep(0.5)
-            TransfertPokemon(10)
+            TransferLowCPPokemon(10)
             return True
         time.sleep(0.5)
         #Last Hope... medals,...
@@ -757,6 +781,47 @@ def ReturnToMap():
     return False
    
 
+def GetPokemonName():
+    img = GetScreen()
+    PokeNameZone = (24, 353, 23+430, 353+52)
+    Frame = img.crop(((PokeNameZone)))
+    Frame.save("tmp\\ocr.png")
+    Command = "bin\\tesseract.exe --tessdata-dir bin\\tessdata tmp\\ocr.png tmp\\ocr > nul"
+    os.system(Command)
+    f = open("tmp\\ocr.txt")
+    PokemonName = f.readline().strip()
+    f.close()
+    return PokemonName
+    
+def IsEvolvable():
+    img = GetScreen()
+    pixdata = img.load()
+    return IsColorInCeil(pixdata[218, 703], (36, 204, 170), 0.005)
+ 
+def IsPokemonOpen():
+    img = GetScreen()
+    pixdata = img.load()
+    return (pixdata[33, 331] == (250, 250, 250) and pixdata[448, 675] == (250, 250, 250))
+    
+def EvolvePokemon():
+    if IsPokemonOpen() == False:
+        print "[!] Not on a Pokemon !"
+        return False
+    if IsEvolvable() == False:
+        print "[!] This Pokemon is not evolvable !"
+        return False
+    #Evolve !
+    Tap(144, 707)
+    time.sleep(0.2)
+    #Validation
+    Tap(239, 420)
+    ClearScreen()
+    print "[!] Waiting end of evolution..."
+    time.sleep(10)
+    while IsPokemonOpen() == False:
+        ClearScreen()
+        time.sleep(1)
+    return True
     
 #Core...
 
@@ -784,6 +849,10 @@ def ReturnToMap():
 #print IsBagFull()
 #print IsGymOpen()
 #print IsOpenPokestop()
+#print IsPokemonOpen()
+#print GetPokemonName()
+#print IsEvolvable()
+#print EvolvePokemon()
 #sys.exit(0)
 
 
