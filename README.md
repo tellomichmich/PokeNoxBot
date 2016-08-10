@@ -3,12 +3,12 @@ How to use ?
 
 * Install Python 2.7 and Pillow 3.3.0 (https://pypi.python.org/pypi/Pillow/3.3.0)
 * Copy C:\Users\USER_NAME\AppData\Roaming\Nox\bin\nox_adb.exe  as adb.exe into bin PokeNoxBot directory
-* Copy C:\Users\USER_NAME\AppData\Roaming\Nox\bin\AdbWinApi.dll into bin PokeNoxBox directory
+* Copy C:\Users\USER_NAME\AppData\Roaming\Nox\bin\AdbWinApi.dll into bin PokeNoxBot directory
+* Install http://3.onj.me/tesseract/ into bin PokeNoxBot directory
 * Set Nox as 480x800 phone
-* Start Pokemon Go in Nox
-* Zoom out 
+* Update Pokemon Go to 0.33.0 version
 * Give a KML file, you can create it here: https://www.bikemap.net
-* Start the Bot
+* Start the Bot (No need to start Pokemon Go in Nox... Bot will do!)
 
 Know bugs:
 * Gym detected as pokemon => (need to change the pokemon detection algorithm)
