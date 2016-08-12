@@ -21,7 +21,7 @@ assert sys.version_info >= (2,7)
 assert sys.version_info < (3,0)
 
 
-EvolveList = ["Pidgey", "Rattata", "Weedle"]
+EvolveList = ["Pidgey", "Rattata", "Weedle", "Caterpie"]
 
 #Rotate a python list
 def rotate_list(l,n):
@@ -170,6 +170,16 @@ def GetImgFromFile(File):
     
 #TODO: class !!!
 img = None
+#TODO: We really need class !!
+TotalExperience = 0
+
+def AddExperience(ExperienceCount):
+    global TotalExperience
+    TotalExperience += ExperienceCount
+
+def GetExperience():
+    global TotalExperience
+    return TotalExperience
 
 def GetScreen():
     global img
@@ -514,13 +524,17 @@ def PokemonWorker(PokemonPosition):
     print "[!] This is a %s" % (PokemonName)
     if PokemonName in EvolveList:
         EvolvePokemon()
+        TransferPokemon()
+    else:
+        ClosePokemon()
+        
+    AddExperience(100)
     
-    ClosePokemon()
-    
-    while IsOnMap() == False:
-        print "[!] Waiting return to the map"
-        time.sleep(1)
-        ClearScreen()
+    #while IsOnMap() == False:
+    #    print "[!] Waiting return to the map"
+    #    time.sleep(1)
+    #    ClearScreen()
+    ReturnToMap()
     return True
 
 def ClosePokemon():
@@ -618,6 +632,9 @@ def PokestopWorker(PokeStopPosition):
         if bIsBagFull == True:
             print "[!] The bag is full..."
             CleanInventory()
+         
+        if bIsSpinnedPokestop == True:
+            AddExperience(50)
 
         bOpenPokestopSuccess = bIsSpinnedPokestop
     return bOpenPokestopSuccess
@@ -774,7 +791,7 @@ def ReturnToMap():
             Tap(345, 419)
             ClearScreen()
             time.sleep(0.5)
-            TransferLowCPPokemon(50)
+            TransferLowCPPokemons(50)
             return True
         time.sleep(0.5)
         #Last Hope... medals,...
@@ -829,6 +846,7 @@ def EvolvePokemon():
     while IsPokemonOpen() == False:
         ClearScreen()
         time.sleep(1)
+    AddExperience(500)
     return True
     
 #Core...
@@ -861,11 +879,12 @@ def EvolvePokemon():
 #print GetPokemonName()
 #print IsEvolvable()
 #print EvolvePokemon()
+#TransferLowCPPokemons(50)
 #sys.exit(0)
 
 
-
-Speed = 20
+#7 is a safe value
+Speed = 7
 loop_geo_points = geo_point_from_kml("Levalois.kml", Speed)
 
 #Searching for the nearest point 
@@ -893,7 +912,6 @@ Count = 0
 SpinnedPokeStopCount = 0
 #Set Initial position
 SetPosition(loop_geo_points[0])
-Experience = 0;
 StartTime = time.time()
 while True:
     for geo_point in loop_geo_points:
@@ -915,8 +933,6 @@ while True:
                 if PokestopWorker(PokeStopPosition) == False:
                     print "[!] Something failed..."
                     break
-                else:
-                    Experience += 50
             
             while True:
                 print "[!] Looking for pokemon"
@@ -938,9 +954,7 @@ while True:
                         CloseGym()
                         print "[!] This place is near a Gym !"
                         break
-                else:
-                    Experience += 100
             #Print estimated exprience for kikoo-time !
-            print "[!] ~%d Exp/h" % ((Experience/(time.time()-StartTime))*60*60)
+            print "[!] ~%d Exp/h" % ((GetExperience()/(time.time()-StartTime))*60*60)
         Count += 1
         #SetPosition(geo_point)
