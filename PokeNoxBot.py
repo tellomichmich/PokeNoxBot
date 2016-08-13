@@ -779,6 +779,7 @@ def ReturnToMap():
             while IsPokemonOpen() == False:
                 print "[!] Waiting end of animation"
                 ClearScreen()
+            AddExperience(500)
             ClosePokemon()
             return True
         if IsPokestopTooFar():
