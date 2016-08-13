@@ -799,9 +799,13 @@ def ReturnToMap():
             print "[!] LAST HOPE TO ESCAPE !"
             Tap(0, 0)
             ClosePokestop()
+            #Close speed alert
+            Tap(236, 536)
             time.sleep(1)
         ClearScreen()
     print "[!] Don't know where we are.... Exiting"
+    img = GetScreen()
+    img.save("OUT_FAIL.png")
     sys.exit(0)
     return False
    
