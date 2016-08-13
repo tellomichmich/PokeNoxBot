@@ -467,13 +467,20 @@ def PokemonWorker(PokemonPosition):
         return None
 
     bIsPokemonHitted = False
+    ThrowCount = 0
     while True:
         if bIsPokemonHitted == False:
             LastPower = random.randint(0,500)
         else:
             print "[!] Using last pokeball power"
+        if ThrowCount > 30 :
+            print "[!] Pokemon too hard, exiting the fight !"
+            ClosePokemonFight()
+            #Return false to avoid refight this pokemon
+            return False
         #TODO Detect pokemon distance
         ThrowPokeball(LastPower)
+        ThrowCount += 1
         time.sleep(1)
         bIsPokemonFightOpened = False
         bIsCatchSuccess = False
@@ -690,9 +697,9 @@ def TransferLowCPPokemons(Number):
         ClearScreen()
         if GetPokemonName() in EvolveList:
             EvolvePokemon()
-            ClosePokemon()
-        else:
-            TransferPokemon()
+        #    ClosePokemon()
+        #else:
+        TransferPokemon()
     
     #Close Menu
     Tap(236, 736)
@@ -739,10 +746,17 @@ def ZoomOut():
     os.system(Command)
     
 def RestartApplication():
-    Tap(240, 444)
-    time.sleep(0.5)
+    #Close the game
+    Command = "bin\\adb shell am force-stop com.nianticlabs.pokemongo"
+    os.system(Command)
     #Start the game
-    Tap(334, 291)
+    Command = "bin\\adb shell monkey -p com.nianticlabs.pokemongo -c android.intent.category.LAUNCHER 1"
+    os.system(Command)
+    #Close the error popup
+    #Tap(240, 444)
+    #time.sleep(0.5)
+    #Start the game
+    #Tap(334, 291)
     while IsOnMap() == False:
         Tap(235, 457)
         ClearScreen()
@@ -815,7 +829,7 @@ def ReturnToMap():
     print "[!] Don't know where we are.... Exiting"
     img = GetScreen()
     img.save("OUT_FAIL.png")
-    sys.exit(0)
+    RestartApplication()
     return False
    
 
