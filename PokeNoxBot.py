@@ -773,6 +773,13 @@ def ReturnToMap():
             PokemonWorker([0,0])
             #No need to close
             return True
+        if IsEggHatched():
+            Tap(200, 440)
+            ClearScreen()
+            while IsPokemonOpen() == False:
+                print "[!] Waiting end of animation"
+            ClosePokemon()
+            return True
         if IsPokestopTooFar():
             ClosePokestop()
             return True
@@ -853,6 +860,12 @@ def EvolvePokemon():
     AddExperience(500)
     return True
     
+def IsEggHatched():
+    img = GetScreen()
+    pixdata = img.load()
+    #print pixdata[18, 780]
+    return IsColorInCeil(pixdata[18, 780], (204, 245, 237), 0.005)
+    
 #Core...
 
 
@@ -884,6 +897,7 @@ def EvolvePokemon():
 #print IsEvolvable()
 #print EvolvePokemon()
 #TransferLowCPPokemons(50)
+
 #sys.exit(0)
 
 
