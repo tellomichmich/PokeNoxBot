@@ -22,6 +22,7 @@ assert sys.version_info < (3,0)
 
 
 EvolveList = ["Pidgey", "Rattata", "Weedle", "Caterpie"]
+ItemToDropList = ["Potion", "Super Potion", "Hyper Potion", "Revive", "Poke Ball", "Razz Berry"]
 
 #Rotate a python list
 def rotate_list(l,n):
@@ -292,7 +293,7 @@ def FindPokemonPosition(img, SquareSize=4):
             if pixdata[xr, yr] == (0, 0, 0):
                 FalsePositiv = GetMeanColor(img, xr, yr, SquareSize)
                 Score = (FalsePositiv[0]+FalsePositiv[1]+FalsePositiv[2])/3
-                if Score < 40:
+                if Score < 70:
                     return [xr, yr]
     return None
     
@@ -371,6 +372,7 @@ def FindPokemon():
     Frame.save("OUT_COLOR.png")
     BlackRatio = BlackOrWhite(Frame)
     Frame.save("OUT_BW.png")
+    #Frame = Image.open("TEST_POKE.png")
     #Search for big Pokemon before small one
     for i in range(10, 2, -2):
         PokemonPosition = FindPokemonPosition(Frame, i)
@@ -548,45 +550,6 @@ def ClosePokemon():
     Tap(239, 740)
     ClearScreen()
     
-def CleanInventory():
-    print "[!] Clean inventory..."
-    if IsOnMap() == False:
-        print "[!] Not on the map !"
-        return False
-    Tap(236, 736)
-    time.sleep(1)
-    Tap(372, 651)
-    time.sleep(1)
-    ClearScreen()
-    while True:
-        img = GetScreen()
-        FirstObjectColor = GetMeanColor(img, 80, 200)
-        print FirstObjectColor
-        if IsColorInCeil(FirstObjectColor, [240, 79, 238], 0.01):
-            print "[!] Lot of Potions will be dropped !"
-        elif IsColorInCeil(FirstObjectColor, [253, 217, 55], 0.01):
-            print "[!] Lot of Super Potions will be dropped !"
-        elif IsColorInCeil(FirstObjectColor, [251, 228, 218], 0.01):
-            print "[!] Lot of Hyper Potions will be dropped !"
-        elif IsColorInCeil(FirstObjectColor, [14, 157, 239], 0.01):
-            print "[!] Lot of Max Potions will be dropped !"
-        elif IsColorInCeil(FirstObjectColor, [254, 224, 96], 0.01):
-            print "[!] Lot of Revives will be dropped !"
-        else:
-            print "[!] Nothing to drop !"
-            break
-        #Remove this object
-        Tap(438, 150)
-        time.sleep(1)
-        #1sec for 20 elements
-        SwipeTime(351, 355, 351, 355, 2000)
-        Tap(236, 511)
-        time.sleep(0.5)
-        ClearScreen()
-    #Close Inventory
-    Tap(236, 736)
-    ClearScreen()
-    
 def PokestopWorker(PokeStopPosition):
     print "[!] Working on Pokestop %d %d" % (PokeStopPosition[0], PokeStopPosition[1])
     Tap(PokeStopPosition[0], PokeStopPosition[1])
@@ -669,16 +632,23 @@ def TransferPokemon():
     Tap(240, 500) #0.33
     time.sleep(1)
     
-def TransferLowCPPokemons(Number):
-    print "[!] Low CP pokemon will be transfered..."
+def OpenPokemonMenu():
     if IsOnMap() == False:
         print "[!] Not on the map !"
         return False
     #Open Menu
     Tap(236, 736)
     time.sleep(0.1)
+    #Open Pokemon Menu
     Tap(104, 659)
     time.sleep(0.2)
+    return True
+
+def TransferLowCPPokemons(Number):
+    print "[!] Low CP pokemon will be transfered..."
+    if OpenPokemonMenu() == False:
+        print "[!] Failed to OpenPokemonMenu"
+        return False
     #Tap CP
     Tap(415, 742) 
     time.sleep(0.1)
@@ -772,7 +742,28 @@ def RestartApplication():
         time.sleep(1)
     ZoomOut()
     ClearScreen()
-        
+    
+def AddEggInIncubator():
+    if OpenPokemonMenu() == False:
+        print "[!] Failed to OpenPokemonMenu"
+        return False
+    time.sleep(0.5)
+    #Tap on EGGS
+    Tap(357, 85)
+    time.sleep(0.2)
+    #Tap on Upper left Egg
+    Tap(80, 217)
+    time.sleep(0.2)
+    #Tap on START INCUBATION
+    Tap(231, 507)
+    time.sleep(0.2)
+    #Tap on first incubator (always a free when a free incubator is available)
+    Tap(67, 619)
+    time.sleep(0.2)
+    #Same ?
+    ClosePokestop()
+    return True
+    
 #TODO !
 def ReturnToMap():
     for i in range(4):
@@ -795,6 +786,7 @@ def ReturnToMap():
                 ClearScreen()
             AddExperience(500)
             ClosePokemon()
+            AddEggInIncubator()
             return True
         if IsPokestopTooFar():
             ClosePokestop()
@@ -832,17 +824,20 @@ def ReturnToMap():
     RestartApplication()
     return False
    
+def ImgToString(img):
+    img.save("tmp\\ocr.png")
+    Command = "bin\\tesseract.exe --tessdata-dir bin\\tessdata tmp\\ocr.png tmp\\ocr > nul 2>&1"
+    os.system(Command)
+    f = open("tmp\\ocr.txt")
+    StringContent = f.readline().strip()
+    f.close()
+    return StringContent
 
 def GetPokemonName():
     img = GetScreen()
-    PokeNameZone = (24, 353, 23+430, 353+52)
+    PokeNameZone = (24, 353, 24+430, 353+52)
     Frame = img.crop(((PokeNameZone)))
-    Frame.save("tmp\\ocr.png")
-    Command = "bin\\tesseract.exe --tessdata-dir bin\\tessdata tmp\\ocr.png tmp\\ocr > nul"
-    os.system(Command)
-    f = open("tmp\\ocr.txt")
-    PokemonName = f.readline().strip()
-    f.close()
+    PokemonName = ImgToString(Frame)
     return PokemonName
     
 def IsEvolvable():
@@ -882,8 +877,50 @@ def IsEggHatched():
     #print pixdata[18, 780]
     return IsColorInCeil(pixdata[18, 780], (204, 245, 237), 0.005)
     
+
+def CleanInventory():
+    print "[!] Clean inventory..."
+    if IsOnMap() == False:
+        print "[!] Not on the map !"
+        return False
+    Tap(236, 736)
+    time.sleep(1)
+    Tap(372, 651)
+    time.sleep(1)
+    ClearScreen()
+    while True:
+        bIsDroppedItem = False
+        img = GetScreen()
+        for i in range(3, -1, -1):
+            ItemNameZone = (152, 140+(170*i), 152+272, 140+(170*i)+39)
+            Frame = img.crop(((ItemNameZone)))
+            ItemName = ImgToString(Frame)
+            print ItemName
+            if ItemName == "":
+                return False
+            if ItemName in ItemToDropList:
+                print "DROP %s " % (ItemName)
+                #Tap on trash
+                Tap(440, 140+(170*i))
+                time.sleep(1)
+                #1sec for 20 elements
+                SwipeTime(351, 355, 351, 355, 2000)
+                #Tap OK
+                Tap(236, 511)
+                time.sleep(0.5)
+                bIsDroppedItem = True
+        if bIsDroppedItem == False:
+            SwipeTime(399, 799, 399, 799-(116*4), 1000)
+            time.sleep(2)
+        ClearScreen()
+    #Close Inventory
+    Tap(236, 736)
+    ClearScreen()
+    return False
+    
 #Core...
 
+#AddEggInIncubator()
 
 #Tap(272, 800)
 #Swipe(539, 200, 0, 200)
@@ -896,7 +933,7 @@ def IsEggHatched():
 #img = GetImgFromScreenShot()
 #FindPokemon()
 #print GetMeanColor(img, 251, 478 )
-#print FindPokemon(img)
+#print FindPokemon()
 #img.save("OUT.png")
 #print PokemonPosition
 #print IsCatchSucess()
@@ -913,7 +950,6 @@ def IsEggHatched():
 #print IsEvolvable()
 #print EvolvePokemon()
 #TransferLowCPPokemons(50)
-
 #sys.exit(0)
 
 
@@ -968,7 +1004,7 @@ while True:
                     print "[!] Something failed..."
                     break
             
-            while True:
+            while False:
                 print "[!] Looking for pokemon"
                 #Clearing the screen because PokestopWorker can be long...
                 ClearScreen()
