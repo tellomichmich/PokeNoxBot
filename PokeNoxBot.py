@@ -1004,7 +1004,7 @@ while True:
                     print "[!] Something failed..."
                     break
             
-            while False:
+            while True:
                 print "[!] Looking for pokemon"
                 #Clearing the screen because PokestopWorker can be long...
                 ClearScreen()
