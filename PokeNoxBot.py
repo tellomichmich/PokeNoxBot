@@ -23,6 +23,7 @@ assert sys.version_info < (3,0)
 
 EvolveList = ["Pidgey", "Rattata", "Weedle", "Caterpie"]
 ItemToDropList = ["Potion", "Super Potion", "Hyper Potion", "Revive", "Poke Ball", "Razz Berry"]
+CPLimit = 500
 
 #Rotate a python list
 def rotate_list(l,n):
@@ -238,7 +239,7 @@ def FindPokestop():
     ReturnToMap()
     img = GetScreen().copy()
     #Apply a mask to keep only "Pokestop zone"
-    PokeStopZone = (140, 420, 200, 180)
+    PokeStopZone = (140, 420, 190, 180)
     mask = Image.new('L', (480, 800), 255)
     draw = ImageDraw.Draw(mask)
     draw.ellipse((PokeStopZone[0],PokeStopZone[1],PokeStopZone[0]+PokeStopZone[2],PokeStopZone[1]+PokeStopZone[3]) , fill=0)
@@ -520,19 +521,26 @@ def PokemonWorker(PokemonPosition):
         else:
             bIsPokemonHitted = False
 
+    #Let the popup to fully open
+    time.sleep(0.5)
     #Close "sucess" Pop-up
     Tap(239, 526)
+    time.sleep(0.5)
     ClearScreen()
-    time.sleep(0.2)
     while IsPokemonOpen() == False:
+        #Tap anywhere will close the sucess pop-up
+        Tap(50,50)
         time.sleep(0.5)
         ClearScreen()
         
     #We are here on the pokemon statistics
     PokemonName = GetPokemonName()
+    PokemonCP = GetPokemonCP()
     print "[!] This is a %s" % (PokemonName)
     if PokemonName in EvolveList:
         EvolvePokemon()
+        TransferPokemon()
+    elif PokemonCP < CPLimit:
         TransferPokemon()
     else:
         ClosePokemon()
@@ -918,6 +926,22 @@ def CleanInventory():
     ClearScreen()
     return False
     
+def GetPokemonCP():
+    #Need to that because of some Pokemon animation
+    while True:
+        img = GetScreen()
+        Frame = img.crop(((160, 49, 160+121, 49+38)))
+        RemoveColor(Frame, (255, 255, 255), 0.4)
+        BlackOrWhite(Frame)
+        Frame.save("toto.png")
+        PokemonCP = ImgToString(Frame).upper()
+        if PokemonCP[:2] == "CP":
+            try:  
+                return int(PokemonCP[2:].replace('O', '0').replace('L', '1').replace('S', '5'))
+            except:
+                pass
+        ClearScreen()
+    
 #Core...
 
 #AddEggInIncubator()
@@ -942,6 +966,9 @@ def CleanInventory():
 #print IsCatchSucess()
 #TransfertPokemon(30)
 
+#img = Image.open("output.png")
+
+
 #print IsBagFull()
 #print IsGymOpen()
 #print IsOpenPokestop()
@@ -950,6 +977,11 @@ def CleanInventory():
 #print IsEvolvable()
 #print EvolvePokemon()
 #TransferLowCPPokemons(50)
+#while True:
+#    print GetPokemonCP()
+#    Tap(460, 200)
+#    time.sleep(0.2)
+#    ClearScreen()
 #sys.exit(0)
 
 
