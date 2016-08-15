@@ -910,7 +910,7 @@ def CleanInventory():
                 time.sleep(0.5)
                 bIsDroppedItem = True
         if bIsDroppedItem == False:
-            SwipeTime(399, 799, 399, 799-(116*4), 1000)
+            SwipeTime(399, 790, 399, 799-(116*4), 1000)
             time.sleep(2)
         ClearScreen()
     #Close Inventory
