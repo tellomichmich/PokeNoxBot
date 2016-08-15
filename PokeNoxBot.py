@@ -894,7 +894,7 @@ def CleanInventory():
         for i in range(3, -1, -1):
             ItemNameZone = (152, 140+(170*i), 152+272, 140+(170*i)+39)
             Frame = img.crop(((ItemNameZone)))
-            ItemName = ImgToString(Frame)
+            ItemName = ImgToString(Frame).replace("\xc3\xa9","e")
             print ItemName
             if ItemName == "":
                 return False
