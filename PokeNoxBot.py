@@ -793,6 +793,7 @@ def ReturnToMap():
             #No need to close
             return True
         if IsEggHatched():
+            sys.exit(0)
             Tap(200, 440)
             ClearScreen()
             while IsPokemonOpen() == False:
@@ -915,6 +916,9 @@ def CleanInventory():
             #TODO: use user-patterns
             ItemName = ImgToString(Frame).replace("\xc3\xa9","e")
             if ItemName == "":
+                #Close Inventory
+                Tap(236, 736)
+                ClearScreen()
                 return False
             if ItemName in ItemToDropList:
                 print "[!] Dropping %s " % (ItemName)
