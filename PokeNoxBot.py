@@ -468,6 +468,9 @@ def PokemonWorker(PokemonPosition):
     if bIsPokemonFightOpened == False:  
         #This is a big fail maybe a gym detected as Pokemon
         return None
+    
+    #Use a Razz Berry if one
+    UseRazzBerry()
 
     bIsPokemonHitted = False
     ThrowCount = 0
@@ -532,18 +535,19 @@ def PokemonWorker(PokemonPosition):
         Tap(50,50)
         time.sleep(0.5)
         ClearScreen()
+    print "[!] On Pokemon"
         
     #We are here on the pokemon statistics
     PokemonName = GetPokemonName()
     PokemonCP = GetPokemonCP()
-    print "[!] This is a %s" % (PokemonName)
-    if PokemonName in EvolveList:
-        EvolvePokemon()
-        TransferPokemon()
-    elif PokemonCP < CPLimit:
-        TransferPokemon()
-    else:
-        ClosePokemon()
+    print "[!] This is a %s CP:%d" % (PokemonName, PokemonCP)
+    #if PokemonName in EvolveList:
+        #EvolvePokemon()
+        #TransferPokemon()
+    #elif PokemonCP < CPLimit:
+    #    TransferPokemon()
+    #else:
+    ClosePokemon()
         
     AddExperience(100)
     
@@ -551,6 +555,7 @@ def PokemonWorker(PokemonPosition):
     #    print "[!] Waiting return to the map"
     #    time.sleep(1)
     #    ClearScreen()
+    print "[!] Waiting return to map..."
     ReturnToMap()
     return True
 
@@ -832,9 +837,12 @@ def ReturnToMap():
     RestartApplication()
     return False
    
-def ImgToString(img):
+def ImgToString(img, PatternFile=None):
     img.save("tmp\\ocr.png")
-    Command = "bin\\tesseract.exe --tessdata-dir bin\\tessdata tmp\\ocr.png tmp\\ocr > nul 2>&1"
+    Command = "bin\\tesseract.exe "
+    if PatternFile != None:
+        Command += "--user-patterns "+PatternFile+ " "
+    Command += "--tessdata-dir bin\\tessdata tmp\\ocr.png tmp\\ocr > nul 2>&1"
     os.system(Command)
     f = open("tmp\\ocr.txt")
     StringContent = f.readline().strip()
@@ -902,12 +910,12 @@ def CleanInventory():
         for i in range(3, -1, -1):
             ItemNameZone = (152, 140+(170*i), 152+272, 140+(170*i)+39)
             Frame = img.crop(((ItemNameZone)))
+            #TODO: use user-patterns
             ItemName = ImgToString(Frame).replace("\xc3\xa9","e")
-            print ItemName
             if ItemName == "":
                 return False
             if ItemName in ItemToDropList:
-                print "DROP %s " % (ItemName)
+                print "[!] Dropping %s " % (ItemName)
                 #Tap on trash
                 Tap(440, 140+(170*i))
                 time.sleep(1)
@@ -925,22 +933,56 @@ def CleanInventory():
     Tap(236, 736)
     ClearScreen()
     return False
-    
+ 
+def UseItem(ItemToUseName):
+    img = GetScreen()
+    for i in range(3, -1, -1):
+        ItemNameZone = (152, 140+(170*i), 152+272, 140+(170*i)+39)
+        Frame = img.crop(((ItemNameZone)))
+        #TODO: use user-patterns
+        ItemName = ImgToString(Frame).replace("\xc3\xa9","e")
+        if ItemName == "":
+            break
+        if ItemName in ItemToUseName:
+            Tap(152, 140+(170*i))
+            return True
+    #Same position as Pokestop
+    #TODO: CloseBagBack
+    ClosePokestop()
+    return False
+
 def GetPokemonCP():
     #Need to that because of some Pokemon animation
     while True:
         img = GetScreen()
         Frame = img.crop(((160, 49, 160+121, 49+38)))
-        RemoveColor(Frame, (255, 255, 255), 0.4)
+        RemoveColor(Frame, (255, 255, 255), 0.2)
         BlackOrWhite(Frame)
-        Frame.save("toto.png")
-        PokemonCP = ImgToString(Frame).upper()
+        PokemonCP = ImgToString(Frame, "bin\\CP_PATTERN.txt").upper()
+        print PokemonCP
         if PokemonCP[:2] == "CP":
             try:  
-                return int(PokemonCP[2:].replace('O', '0').replace('L', '1').replace('S', '5'))
+                return int(PokemonCP[2:])
             except:
                 pass
         ClearScreen()
+        
+def UseRazzBerry():
+    if IsPokemonFightOpen() == False:
+        print "[!] Impossible to use Razz Berry here !"
+        return False
+    #Tap on Bag Back
+    Tap(418, 737)
+    time.sleep(0.5)
+    ClearScreen()
+    if UseItem("Razz Berry") == True:
+        #Tap on Razz Berry
+        Tap(237, 600)
+        time.sleep(0.5)
+        ClearScreen()
+        return True
+    return False
+    
     
 #Core...
 
@@ -982,6 +1024,8 @@ def GetPokemonCP():
 #    Tap(460, 200)
 #    time.sleep(0.2)
 #    ClearScreen()
+#print GetPokemonCP()
+
 #sys.exit(0)
 
 
