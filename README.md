@@ -25,5 +25,8 @@ Video by PassiveModding:
 Video & Tuto by MasterWin:
 * https://www.youtube.com/watch?v=fYsHtOxRP-Q
 * https://www.youtube.com/watch?v=chyE3EcozXA&lc=z120xlsahorteznyb04cgdz5jxz2s1gx1n00k
+
+Video & Tuto by Clan Clash Of Kings (In Turkish)
+* https://www.youtube.com/watch?v=SPzUBphO5GI
 </pre>
 
