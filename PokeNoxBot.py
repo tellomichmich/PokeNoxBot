@@ -541,13 +541,13 @@ def PokemonWorker(PokemonPosition):
     PokemonName = GetPokemonName()
     PokemonCP = GetPokemonCP()
     print "[!] This is a %s CP:%d" % (PokemonName, PokemonCP)
-    #if PokemonName in EvolveList:
-        #EvolvePokemon()
-        #TransferPokemon()
-    #elif PokemonCP < CPLimit:
-    #    TransferPokemon()
-    #else:
-    ClosePokemon()
+    if PokemonName in EvolveList:
+        EvolvePokemon()
+        TransferPokemon()
+    elif PokemonCP < CPLimit:
+        TransferPokemon()
+    else:
+        ClosePokemon()
         
     AddExperience(100)
     
@@ -978,7 +978,8 @@ def UseRazzBerry():
     if UseItem("Razz Berry") == True:
         #Tap on Razz Berry
         Tap(237, 600)
-        time.sleep(0.5)
+        #Animation of Razz Berry
+        time.sleep(1)
         ClearScreen()
         return True
     return False
