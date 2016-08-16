@@ -241,7 +241,7 @@ def FindPokestop():
     ReturnToMap()
     img = GetScreen().copy()
     #Apply a mask to keep only "Pokestop zone"
-    PokeStopZone = (140, 420, 190, 180)
+    PokeStopZone = (135, 420, 195, 180)
     mask = Image.new('L', (480, 800), 255)
     draw = ImageDraw.Draw(mask)
     draw.ellipse((PokeStopZone[0],PokeStopZone[1],PokeStopZone[0]+PokeStopZone[2],PokeStopZone[1]+PokeStopZone[3]) , fill=0)
@@ -850,8 +850,9 @@ def ImgToString(img, ConfigFile=None):
     Command = "bin\\tesseract.exe --tessdata-dir bin\\tessdata tmp\\ocr.png tmp\\ocr "
     
     if ConfigFile != None:
-        Command += ""+ConfigFile+ ""
+        Command += ""+ConfigFile+" "
     Command += "> nul 2>&1"
+    print Command
     os.system(Command)
     f = open("tmp\\ocr.txt")
     StringContent = f.readline().strip()
@@ -971,7 +972,7 @@ def GetPokemonCP():
         Frame = img.crop(((160, 49, 160+121, 49+38)))
         RemoveColor(Frame, (255, 255, 255), 0.2)
         BlackOrWhite(Frame)
-        PokemonCP = ImgToString(Frame, "bin\\CP_PATTERN.txt").upper()
+        PokemonCP = ImgToString(Frame, "bin\\CP_CONFIG.txt").upper()
         #print PokemonCP
         if PokemonCP[:2] == "CP":
             try:  
@@ -1028,12 +1029,9 @@ def EvolveAllPokemon():
 #Core...
 
 #AddEggInIncubator()
-
 #Tap(272, 800)
 #Swipe(539, 200, 0, 200)
 #Tap(490, 128)
-
-
 #img = GetImgFromFile("output.png")
 #PokemonPosition = FindPokemon()
 #PokeStopPosition = FindPokestop(img)
@@ -1048,10 +1046,7 @@ def EvolveAllPokemon():
 #CleanInventory()
 #print IsCatchSucess()
 #TransfertPokemon(30)
-
 #img = Image.open("output.png")
-
-
 #print IsBagFull()
 #print IsGymOpen()
 #print IsOpenPokestop()
@@ -1060,7 +1055,6 @@ def EvolveAllPokemon():
 #print IsEvolvable()
 #print EvolvePokemon()
 #TransferLowCPPokemons(50)
-
 #print GetPokemonCP()
 #EvolveAllPokemon()
 #sys.exit(0)
