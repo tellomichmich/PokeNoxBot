@@ -894,6 +894,7 @@ def EvolvePokemon():
         ClearScreen()
         time.sleep(1)
     AddExperience(500)
+    print "[!] Evolution done !"
     return True
     
 def IsEggHatched():
@@ -1003,7 +1004,7 @@ def EvolveAllPokemon():
     Tap(77, 239)
     time.sleep(0.5)
     ClearScreen()
-    while True:
+    for i in range(250):
         #print GetPokemonCP()
         if IsEvolvable() == True and GetPokemonName() in EvolveList:
             print "Evolvable"
@@ -1012,11 +1013,18 @@ def EvolveAllPokemon():
             #Tap on Upper Left Pokemon
             Tap(77, 239)
             time.sleep(0.5)
+            #This is not optimized at all !
+            for j in range(i):
+                #Go to Next Pokemon
+                Tap(460, 200)
             ClearScreen()
         #Go to Next Pokemon
         Tap(460, 200)
         time.sleep(1)
         ClearScreen()
+    ClosePokemon()
+    #ClosePokemonMenu
+    ClosePokestop()
 #Core...
 
 #AddEggInIncubator()
@@ -1054,7 +1062,7 @@ def EvolveAllPokemon():
 #TransferLowCPPokemons(50)
 
 #print GetPokemonCP()
-
+#EvolveAllPokemon()
 #sys.exit(0)
 
 
@@ -1109,7 +1117,7 @@ while True:
                     print "[!] Something failed..."
                     break
             
-            while False:
+            while True:
                 print "[!] Looking for pokemon"
                 #Clearing the screen because PokestopWorker can be long...
                 ClearScreen()
