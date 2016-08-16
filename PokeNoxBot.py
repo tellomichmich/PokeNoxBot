@@ -22,10 +22,10 @@ assert sys.version_info < (3,0)
 
 
 ItemToDropList = ["Potion", "Super Potion", "Hyper Potion", "Revive", "Poke Ball", "Razz Berry"]
-#EvolveList = ["Pidgey", "Rattata", "Weedle", "Caterpie"]
-#CPLimit = 500
-CPLimit = 0
-EvolveList = []
+EvolveList = ["Pidgey", "Rattata", "Weedle", "Caterpie"]
+CPLimit = 500
+#CPLimit = 0
+#EvolveList = []
 
 #Rotate a python list
 def rotate_list(l,n):
@@ -199,7 +199,7 @@ def IsOpenPokestop():
     img = GetScreen()
     #Outer
     MeanColor = GetMeanColor(img, 234, 780)
-    print MeanColor
+    #print MeanColor
     if MeanColor[0] < 150 and MeanColor[1] < 230 and MeanColor[2] > 240:
         return True
     #Inner border
@@ -774,7 +774,9 @@ def AddEggInIncubator():
     #Tap on first incubator (always a free when a free incubator is available)
     Tap(67, 619)
     time.sleep(0.2)
-    #Same ?
+    #Close Egg Screen
+    ClosePokestop()
+    #Close Eggs Screen
     ClosePokestop()
     return True
     
@@ -792,16 +794,20 @@ def ReturnToMap():
             PokemonWorker([0,0])
             #No need to close
             return True
-        if IsEggHatched():
-            sys.exit(0)
+        if IsEggHatched() == True:
+            print "[!] EGG HATCHED !!!!!!!!!!"
             Tap(200, 440)
             ClearScreen()
+            print "[!] Waiting end of animation"
             while IsPokemonOpen() == False:
-                print "[!] Waiting end of animation"
                 ClearScreen()
             AddExperience(500)
             ClosePokemon()
-            AddEggInIncubator()
+            time.sleep(2)
+            ClearScreen()
+            #Be sur in case we have multiple egg at the same time
+            if IsOnMap() == True:
+                AddEggInIncubator()
             return True
         if IsPokestopTooFar():
             ClosePokestop()
@@ -965,7 +971,7 @@ def GetPokemonCP():
         RemoveColor(Frame, (255, 255, 255), 0.2)
         BlackOrWhite(Frame)
         PokemonCP = ImgToString(Frame, "bin\\CP_PATTERN.txt").upper()
-        print PokemonCP
+        #print PokemonCP
         if PokemonCP[:2] == "CP":
             try:  
                 return int(PokemonCP[2:])
@@ -990,7 +996,27 @@ def UseRazzBerry():
         return True
     return False
     
-    
+#TODO: Optimize this!
+def EvolveAllPokemon():
+    OpenPokemonMenu()
+    #Tap on Upper Left Pokemon
+    Tap(77, 239)
+    time.sleep(0.5)
+    ClearScreen()
+    while True:
+        #print GetPokemonCP()
+        if IsEvolvable() == True and GetPokemonName() in EvolveList:
+            print "Evolvable"
+            EvolvePokemon()
+            ClosePokemon()
+            #Tap on Upper Left Pokemon
+            Tap(77, 239)
+            time.sleep(0.5)
+            ClearScreen()
+        #Go to Next Pokemon
+        Tap(460, 200)
+        time.sleep(1)
+        ClearScreen()
 #Core...
 
 #AddEggInIncubator()
@@ -1026,11 +1052,7 @@ def UseRazzBerry():
 #print IsEvolvable()
 #print EvolvePokemon()
 #TransferLowCPPokemons(50)
-#while True:
-#    print GetPokemonCP()
-#    Tap(460, 200)
-#    time.sleep(0.2)
-#    ClearScreen()
+
 #print GetPokemonCP()
 
 #sys.exit(0)
@@ -1087,7 +1109,7 @@ while True:
                     print "[!] Something failed..."
                     break
             
-            while True:
+            while False:
                 print "[!] Looking for pokemon"
                 #Clearing the screen because PokestopWorker can be long...
                 ClearScreen()
