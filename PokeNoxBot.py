@@ -21,9 +21,11 @@ assert sys.version_info >= (2,7)
 assert sys.version_info < (3,0)
 
 
-EvolveList = ["Pidgey", "Rattata", "Weedle", "Caterpie"]
 ItemToDropList = ["Potion", "Super Potion", "Hyper Potion", "Revive", "Poke Ball", "Razz Berry"]
-CPLimit = 500
+#EvolveList = ["Pidgey", "Rattata", "Weedle", "Caterpie"]
+#CPLimit = 500
+CPLimit = 0
+EvolveList = []
 
 #Rotate a python list
 def rotate_list(l,n):
@@ -209,7 +211,7 @@ def IsOpenPokestop():
  
 def SpinPokestop():
     Swipe(432, 424, 109, 432)
-    time.sleep(0.2)
+    time.sleep(0.5)
     ClearScreen()
     
 def IsSpinnedPokestop():
@@ -566,7 +568,7 @@ def ClosePokemon():
 def PokestopWorker(PokeStopPosition):
     print "[!] Working on Pokestop %d %d" % (PokeStopPosition[0], PokeStopPosition[1])
     Tap(PokeStopPosition[0], PokeStopPosition[1])
-    time.sleep(0.2)
+    time.sleep(0.6)
     ClearScreen()
     if IsOnMap() == True:
         print "[!] Click failed !"
@@ -598,7 +600,6 @@ def PokestopWorker(PokeStopPosition):
         SpinPokestop()
         bIsSpinnedPokestop = False
         for i in range(3):
-            time.sleep(0.3)
             if IsSpinnedPokestop() == True:
                 bIsSpinnedPokestop = True
                 break
@@ -837,12 +838,13 @@ def ReturnToMap():
     RestartApplication()
     return False
    
-def ImgToString(img, PatternFile=None):
+def ImgToString(img, ConfigFile=None):
     img.save("tmp\\ocr.png")
-    Command = "bin\\tesseract.exe "
-    if PatternFile != None:
-        Command += "--user-patterns "+PatternFile+ " "
-    Command += "--tessdata-dir bin\\tessdata tmp\\ocr.png tmp\\ocr > nul 2>&1"
+    Command = "bin\\tesseract.exe --tessdata-dir bin\\tessdata tmp\\ocr.png tmp\\ocr "
+    
+    if ConfigFile != None:
+        Command += ""+ConfigFile+ ""
+    Command += "> nul 2>&1"
     os.system(Command)
     f = open("tmp\\ocr.txt")
     StringContent = f.readline().strip()
@@ -976,10 +978,10 @@ def UseRazzBerry():
     time.sleep(0.5)
     ClearScreen()
     if UseItem("Razz Berry") == True:
-        #Tap on Razz Berry
+        #Tap on Razz Berry to really use it
         Tap(237, 600)
         #Animation of Razz Berry
-        time.sleep(1)
+        time.sleep(1.5)
         ClearScreen()
         return True
     return False

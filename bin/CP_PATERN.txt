@@ -1,1 +1,1 @@
-CP\d*
+tessedit_char_whitelist CP01234567890
