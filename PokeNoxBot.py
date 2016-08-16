@@ -852,7 +852,7 @@ def ImgToString(img, ConfigFile=None):
     if ConfigFile != None:
         Command += ""+ConfigFile+" "
     Command += "> nul 2>&1"
-    print Command
+    #print Command
     os.system(Command)
     f = open("tmp\\ocr.txt")
     StringContent = f.readline().strip()
