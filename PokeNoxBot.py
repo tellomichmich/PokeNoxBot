@@ -26,7 +26,9 @@ EvolveList = ["Pidgey", "Rattata", "Weedle", "Caterpie"]
 #Pokemon under this limit will be transfered
 TransferCPLimit = 500
 #If pokemon CP > GreatBallCPLimit the GreatBall will be used
-GreatBallCPLimit = 500
+GreatBallCPLimit = 600
+UltraBallCPLimit = 700
+RazzBerryCPLimit = 400
 #WalkSpeed in meters per second, 7 is a safe/good value
 Speed = 7
 
@@ -197,28 +199,40 @@ def GetPokemonFightNameCP():
         PokemonNameCP =  ImgToString(img1).split(' ')
         print PokemonNameCP
         
+        #New pokenom don't have the pokeball in front of name
+        #['BLABLA', 'CP123'] 
+        if len(PokemonNameCP) == 2:
+            CPMark = PokemonNameCP[1][:2]
+            CPMark = CPMark.replace('(', 'C')
+            if CPMark == "CP":
+                PokemonName = PokemonNameCP[0]
+                PokemonCP = PokemonNameCP[1][2:]
+        #@ is the pokeball
         #['@', 'BLABLA', 'CP123']
-        if len(PokemonNameCP) == 3:
+        elif len(PokemonNameCP) == 3:
             CPMark = PokemonNameCP[2][:2]
-            CPMark.replace('(', 'C')
+            CPMark = CPMark.replace('(', 'C')
             if CPMark == "CP":
                 PokemonName = PokemonNameCP[1]
                 PokemonCP = PokemonNameCP[2][2:]
+            #TODO ['BLABLA', 'CP', '123']
         #['@', 'BLABLA', 'CP', '123']
         elif len(PokemonNameCP) == 4:
             CPMark = PokemonNameCP[2]
-            CPMark.replace('(', 'C')
+            CPMark = CPMark.replace('(', 'C')
             if PokemonNameCP[2] == "CP":
                 PokemonName = PokemonNameCP[1]
                 PokemonCP = PokemonNameCP[3]
-        
+        print "-> %s %s" % (PokemonName, PokemonCP)
         if PokemonCP != None and PokemonName != None:
             #Little correction
-            PokemonCP.replace('O', '0')
-            PokemonCP.replace('L', '1')
-            PokemonCP.replace('Z', '2')
-            PokemonCP.replace('/', '7')
-            PokemonCP.replace('S', '5')
+            PokemonCP = PokemonCP.replace('O', '0')
+            PokemonCP = PokemonCP.replace('L', '1')
+            PokemonCP = PokemonCP.replace('l', '1')
+            PokemonCP = PokemonCP.replace('Z', '2')
+            PokemonCP = PokemonCP.replace('/', '7')
+            PokemonCP = PokemonCP.replace('S', '5')
+            PokemonCP = PokemonCP.replace('R', '8')
             if PokemonCP == "???":
                 PokemonCP = "9999"
             try:
@@ -454,7 +468,6 @@ def FindPokemon():
 def ThrowPokeball(Power):
     #Far 100
     #Near 400
-    print "[!] Throw a Pokeball (%d)" % (100+Power)
     SwipeTime(236, 780, 236, 30+Power, 200)
     ClearScreen()
 
@@ -536,16 +549,29 @@ def PokemonWorker(PokemonPosition):
     if bIsPokemonFightOpened == False:  
         #This is a big fail maybe a gym detected as Pokemon
         return None
-        
+    
+    #Get the Name and the CP of this Pokemon
     (PokemonName, PokemonCP) = GetPokemonFightNameCP()
     print "[!] Seems to be a %s at %d" % (PokemonName, PokemonCP)
     
-    if PokemonCP >= GreatBallCPLimit:
-        print "[!] Using a GreatBall %d > %d" % (PokemonCP, GreatBallCPLimit)
-        UseGreatBall()
+    #Select the right Poke Ball
+    SelectedPokeball = "Poke Ball"
+    if PokemonCP >= UltraBallCPLimit:
+        print "[!] Using a Ultra Ball %d > %d" % (PokemonCP, UltraBallCPLimit)
+        if UseUltraBall() == False:
+            if UseGreatBall() == True:
+                SelectedPokeball = "Great Ball" 
+        else:
+           SelectedPokeball = "Ultra Ball" 
+    elif PokemonCP >= GreatBallCPLimit:
+        print "[!] Using a Great Ball %d > %d" % (PokemonCP, GreatBallCPLimit)
+        if UseGreatBall() == True:
+            SelectedPokeball = "Great Ball" 
 
     #Use a Razz Berry if one
-    UseRazzBerry()
+    if PokemonCP >= RazzBerryCPLimit:
+        if UseRazzBerry() == True:
+            print "[!] Using Razz Berry"
 
     bIsPokemonHitted = False
     ThrowCount = 0
@@ -553,13 +579,14 @@ def PokemonWorker(PokemonPosition):
         if bIsPokemonHitted == False:
             LastPower = random.randint(0,500)
         else:
-            print "[!] Using last pokeball power"
+            print "[!] Using last "+SelectedPokeball+" power"
         if ThrowCount > 30 :
             print "[!] Pokemon too hard, exiting the fight !"
             ClosePokemonFight()
             #Return false to avoid refight this pokemon
             return False
         #TODO Detect pokemon distance
+        print "[!] Throwing a "+SelectedPokeball+" (%d)" % LastPower
         ThrowPokeball(LastPower)
         ThrowCount += 1
         time.sleep(1)
@@ -886,6 +913,7 @@ def ReturnToMap():
             return True
         if IsEggHatched() == True:
             print "[!] EGG HATCHED !!!!!!!!!!"
+            #Tap anywhere on screen
             Tap(200, 440)
             ClearScreen()
             print "[!] Waiting end of animation"
@@ -1098,12 +1126,24 @@ def UseRazzBerry():
     
 def UseGreatBall():
     if IsPokemonFightOpen() == False:
-        print "[!] Impossible to use Razz Berry here !"
+        print "[!] Impossible to use Great Ball here !"
         return False
     OpenBackPack()
     if UseItem("Great Ball") == True:
         #Animation of Great Ball
-        time.sleep(0.5)
+        time.sleep(0.2)
+        ClearScreen()
+        return True
+    return False
+
+def UseUltraBall():
+    if IsPokemonFightOpen() == False:
+        print "[!] Impossible to use Ultra Ball here !"
+        return False
+    OpenBackPack()
+    if UseItem("Ultra Ball") == True:
+        #Animation of Great Ball
+        time.sleep(0.2)
         ClearScreen()
         return True
     return False
