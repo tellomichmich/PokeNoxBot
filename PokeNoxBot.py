@@ -594,7 +594,7 @@ def PokemonWorker(PokemonPosition):
         bIsCatchSuccess = False
         bIsOnMap = False
         StressCount = 0
-        while True:
+        for i in range(30):
             if IsPokemonFightOpen() == True:
                 bIsPokemonFightOpened = True
                 break
@@ -604,6 +604,8 @@ def PokemonWorker(PokemonPosition):
             if IsOnMap() == True:
                 bIsOnMap = True
                 break
+            if IsGameCrashed() == True:
+                return None
             print "[!] #STRESS..."
             StressCount += 1
             ClearScreen()
@@ -1090,7 +1092,7 @@ def UseItem(ItemToUseName):
 
 def GetPokemonCP():
     #Need to that because of some Pokemon animation
-    while True:
+    for i in range(5):
         img = GetScreen()
         Frame = img.crop(((160, 49, 160+121, 49+38)))
         RemoveColor(Frame, (255, 255, 255), 0.2)
@@ -1103,6 +1105,7 @@ def GetPokemonCP():
             except:
                 pass
         ClearScreen()
+    return 9999
         
 def OpenBackPack():
     #Tap on Back Pack
