@@ -10,6 +10,15 @@ How to use ?
 * Give a KML file, you can create it here: https://www.bikemap.net
 * Start the Bot (No need to start Pokemon Go in Nox... Bot will do!)
 
+Features
+* Human behavior
+* Hatch Egg
+* Use Razz Berry
+* Use Great Ball
+* Drop bag item
+* Evolve Pokemon
+* Transfer Pokemon
+
 Know bugs:
 * Gym detected as pokemon => (need to change the pokemon detection algorithm)
 * Some Pokestop aren't spinned => (need to improve the Pokestop detection algorithm)

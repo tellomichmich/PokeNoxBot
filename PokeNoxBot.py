@@ -12,7 +12,7 @@ import datetime
 
 import traceback
 
-from PIL import Image, ImageOps, ImageDraw, ImageChops
+from PIL import Image, ImageOps, ImageDraw, ImageChops, ImageFilter
 
 from math import ceil, radians, cos, sin, asin, sqrt
 import re
@@ -20,12 +20,15 @@ import re
 assert sys.version_info >= (2,7)
 assert sys.version_info < (3,0)
 
-
+#When bag is full, item in this list will be dropped
 ItemToDropList = ["Potion", "Super Potion", "Hyper Potion", "Revive", "Poke Ball", "Razz Berry"]
 EvolveList = ["Pidgey", "Rattata", "Weedle", "Caterpie"]
-CPLimit = 500
-#CPLimit = 0
-#EvolveList = []
+#Pokemon under this limit will be transfered
+TransferCPLimit = 500
+#If pokemon CP > GreatBallCPLimit the GreatBall will be used
+GreatBallCPLimit = 500
+#WalkSpeed in meters per second, 7 is a safe/good value
+Speed = 7
 
 #Rotate a python list
 def rotate_list(l,n):
@@ -94,6 +97,10 @@ def Swipe(x1, y1, x2, y2):
     
 def SwipeTime(x1, y1, x2, y2, t):
     Command = "bin\\adb.exe shell input swipe %d %d %d %d %d" % (x1, y1, x2, y2, t)
+    os.system(Command)
+    
+def KeyEscap():
+    Command = "bin\\adb.exe shell input keyevent 4"
     os.system(Command)
 
 def TakePngScreenshot():
@@ -167,6 +174,62 @@ def GetImgFromScreenShot():
     #img.save("tmp/%04d.png" % (ScreenShotCount))
     return img
     
+def HighContrast(img, Limit=126):
+    pixdata1 = img.load()
+    for xr in xrange(img.size[0]):
+        for yr in xrange(img.size[1]):
+            if pixdata1[xr, yr] >= Limit:
+                pixdata1[xr, yr] = 255
+            else:
+                pixdata1[xr, yr] = 0
+            
+#This is a best effort implementation !            
+def GetPokemonFightNameCP():
+    for i in range(10):
+        PokemonName = None
+        PokemonCP = None
+        img1 = GetScreen()
+        img1 = img1.crop(((35, 210, 35+387, 210+90)))
+        img1 = ImageOps.grayscale(img1)
+        ContrastPower = 223+random.randint(-10, 10)
+        HighContrast(img1, ContrastPower)
+        img1.save("diff.png")
+        PokemonNameCP =  ImgToString(img1).split(' ')
+        print PokemonNameCP
+        
+        #['@', 'BLABLA', 'CP123']
+        if len(PokemonNameCP) == 3:
+            CPMark = PokemonNameCP[2][:2]
+            CPMark.replace('(', 'C')
+            if CPMark == "CP":
+                PokemonName = PokemonNameCP[1]
+                PokemonCP = PokemonNameCP[2][2:]
+        #['@', 'BLABLA', 'CP', '123']
+        elif len(PokemonNameCP) == 4:
+            CPMark = PokemonNameCP[2]
+            CPMark.replace('(', 'C')
+            if PokemonNameCP[2] == "CP":
+                PokemonName = PokemonNameCP[1]
+                PokemonCP = PokemonNameCP[3]
+        
+        if PokemonCP != None and PokemonName != None:
+            #Little correction
+            PokemonCP.replace('O', '0')
+            PokemonCP.replace('L', '1')
+            PokemonCP.replace('Z', '2')
+            PokemonCP.replace('/', '7')
+            PokemonCP.replace('S', '5')
+            if PokemonCP == "???":
+                PokemonCP = "9999"
+            try:
+                PokemonCP = int(PokemonCP)
+                print ContrastPower
+                return (PokemonName, PokemonCP)
+            except:
+                pass
+        ClearScreen()
+    return ("Unknown", 9999)
+
 def GetImgFromFile(File):               
     img = Image.open(File)
     img = img.convert("RGB")
@@ -228,12 +291,14 @@ def IsSpinnedPokestop():
     return False
     
 def ClosePokestop():
-    Tap(236, 736)
+    #Tap(236, 736)
+    KeyEscap()
     time.sleep(1)
     ClearScreen()
 
 def CloseGym():
-    Tap(236, 736)
+    #Tap(236, 736)
+    KeyEscap()
     time.sleep(0.2)
     ClearScreen()
     
@@ -457,7 +522,8 @@ def PokemonWorker(PokemonPosition):
         if IsPokeBoxFull() == True:
             print "[!] The PokeBox is full !"
             #Close the pop-up
-            Tap(345, 419)
+            #Tap(345, 419)
+            KeyEscap()
             time.sleep(0.5)
             ClearScreen()
             TransferLowCPPokemons(10)
@@ -470,7 +536,14 @@ def PokemonWorker(PokemonPosition):
     if bIsPokemonFightOpened == False:  
         #This is a big fail maybe a gym detected as Pokemon
         return None
+        
+    (PokemonName, PokemonCP) = GetPokemonFightNameCP()
+    print "[!] Seems to be a %s at %d" % (PokemonName, PokemonCP)
     
+    if PokemonCP >= GreatBallCPLimit:
+        print "[!] Using a GreatBall %d > %d" % (PokemonCP, GreatBallCPLimit)
+        UseGreatBall()
+
     #Use a Razz Berry if one
     UseRazzBerry()
 
@@ -509,7 +582,7 @@ def PokemonWorker(PokemonPosition):
             ClearScreen()
             
         if bIsCatchSuccess == True:
-            print "[!] Pokemon captured !"
+            print "[!] Pokemon caught !"
             break
             
         if bIsOnMap == True:
@@ -546,7 +619,7 @@ def PokemonWorker(PokemonPosition):
     if PokemonName in EvolveList:
         EvolvePokemon()
         TransferPokemon()
-    elif PokemonCP < CPLimit:
+    elif PokemonCP < TransferCPLimit:
         TransferPokemon()
     else:
         ClosePokemon()
@@ -562,7 +635,9 @@ def PokemonWorker(PokemonPosition):
     return True
 
 def ClosePokemon():
-    Tap(239, 740)
+    #Tap(239, 740)
+    KeyEscap()
+    time.sleep(0.3)
     ClearScreen()
     
 def PokestopWorker(PokeStopPosition):
@@ -622,8 +697,13 @@ def PokestopWorker(PokeStopPosition):
 
         bOpenPokestopSuccess = bIsSpinnedPokestop
     return bOpenPokestopSuccess
-        
+
+def random_lat_long_delta():
+    return ((random.random() * 0.00001) - 0.000005) * 3
+    
 def SetPosition(Position):
+    Position[1] += random_lat_long_delta()
+    Position[0] += random_lat_long_delta()
     Command = "bin\\adb.exe shell \"setprop persist.nox.gps.longitude %f && setprop persist.nox.gps.latitude %f && setprop persist.nox.gps.altitude %f\"" % (Position[0], Position[1], Position[2])
     #Saved position
     f = open("tmp/saved_position.txt", "w")
@@ -658,6 +738,11 @@ def OpenPokemonMenu():
     time.sleep(0.2)
     return True
 
+def CloseMenu():
+    KeyEscap()
+    time.sleep(0.3)
+    ClearScreen()
+    
 def TransferLowCPPokemons(Number):
     print "[!] Low CP pokemon will be transfered..."
     if OpenPokemonMenu() == False:
@@ -686,7 +771,8 @@ def TransferLowCPPokemons(Number):
         TransferPokemon()
     
     #Close Menu
-    Tap(236, 736)
+    #Tap(236, 736)
+    CloseMenu()
     #Wait to be on the map
     time.sleep(1)
     
@@ -756,7 +842,8 @@ def RestartApplication():
         time.sleep(1)
     ZoomOut()
     ClearScreen()
-    
+
+#TODO: Handle multiple egg incubators
 def AddEggInIncubator():
     if OpenPokemonMenu() == False:
         print "[!] Failed to OpenPokemonMenu"
@@ -775,9 +862,12 @@ def AddEggInIncubator():
     Tap(67, 619)
     time.sleep(0.2)
     #Close Egg Screen
-    ClosePokestop()
+    #ClosePokestop()
+    KeyEscap()
     #Close Eggs Screen
-    ClosePokestop()
+    #ClosePokestop()
+    ClosePokemonMemu()
+    KeyEscap()
     return True
     
 #TODO !
@@ -833,6 +923,8 @@ def ReturnToMap():
         #Last Hope... medals,...
         if i == 2:
             print "[!] LAST HOPE TO ESCAPE !"
+            for j in range(4):
+                KeyEscap()
             Tap(0, 0)
             ClosePokestop()
             #Close speed alert
@@ -944,10 +1036,14 @@ def CleanInventory():
             time.sleep(2)
         ClearScreen()
     #Close Inventory
-    Tap(236, 736)
+    KeyEscap()
     ClearScreen()
     return False
  
+def CloseBackPack():
+    KeyEscap()
+    ClearScreen()
+    
 def UseItem(ItemToUseName):
     img = GetScreen()
     for i in range(3, -1, -1):
@@ -961,8 +1057,7 @@ def UseItem(ItemToUseName):
             Tap(152, 140+(170*i))
             return True
     #Same position as Pokestop
-    #TODO: CloseBagBack
-    ClosePokestop()
+    CloseBackPack()
     return False
 
 def GetPokemonCP():
@@ -981,14 +1076,17 @@ def GetPokemonCP():
                 pass
         ClearScreen()
         
+def OpenBackPack():
+    #Tap on Back Pack
+    Tap(418, 737)
+    time.sleep(0.5)
+    ClearScreen()
+    
 def UseRazzBerry():
     if IsPokemonFightOpen() == False:
         print "[!] Impossible to use Razz Berry here !"
         return False
-    #Tap on Bag Back
-    Tap(418, 737)
-    time.sleep(0.5)
-    ClearScreen()
+    OpenBackPack()
     if UseItem("Razz Berry") == True:
         #Tap on Razz Berry to really use it
         Tap(237, 600)
@@ -997,6 +1095,22 @@ def UseRazzBerry():
         ClearScreen()
         return True
     return False
+    
+def UseGreatBall():
+    if IsPokemonFightOpen() == False:
+        print "[!] Impossible to use Razz Berry here !"
+        return False
+    OpenBackPack()
+    if UseItem("Great Ball") == True:
+        #Animation of Great Ball
+        time.sleep(0.5)
+        ClearScreen()
+        return True
+    return False
+
+def ClosePokemonMemu():
+    KeyEscap()
+    ClearScreen()
     
 #TODO: Optimize this!
 def EvolveAllPokemon():
@@ -1024,8 +1138,7 @@ def EvolveAllPokemon():
         time.sleep(1)
         ClearScreen()
     ClosePokemon()
-    #ClosePokemonMenu
-    ClosePokestop()
+    ClosePokemonMenu()
 #Core...
 
 #AddEggInIncubator()
@@ -1057,11 +1170,11 @@ def EvolveAllPokemon():
 #TransferLowCPPokemons(50)
 #print GetPokemonCP()
 #EvolveAllPokemon()
+#print GetPokemonFightNameCP()
 #sys.exit(0)
 
 
-#7 is a safe value
-Speed = 7
+
 loop_geo_points = geo_point_from_kml("Levalois.kml", Speed)
 
 #Searching for the nearest point 
@@ -1086,7 +1199,6 @@ if os.path.isfile("tmp/saved_position.txt"):
 		#Teleport Security
 
 Count = 0
-SpinnedPokeStopCount = 0
 #Set Initial position
 SetPosition(loop_geo_points[0])
 StartTime = time.time()
