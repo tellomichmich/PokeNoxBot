@@ -35,6 +35,7 @@ RazzBerryCPLimit = 400
 #WalkSpeed in meters per second, 7 is a safe/good value
 Speed = 7
 IVCalculator = PokemonIVCalculator.PokemonIVCalculator()
+IVLimit = 0.9
 
 #Rotate a python list
 def rotate_list(l,n):
@@ -199,8 +200,8 @@ def GetPokemonFightNameCP():
         img1 = ImageOps.grayscale(img1)
         ContrastPower = 223+random.randint(-10, 10)
         HighContrast(img1, ContrastPower)
-        img1.save("diff.png")
-        PokemonNameCP =  ImgToString(img1).split(' ')
+        img1.save("tmp\\OUT_POKEFIGHT.png")
+        PokemonNameCP =  ImgToString(img1, "bin\\POKENAMECP_CONFIG.txt").split(' ')
         print PokemonNameCP
         
         #New pokenom don't have the pokeball in front of name
@@ -329,13 +330,12 @@ def FindPokestop():
     draw = ImageDraw.Draw(mask)
     draw.ellipse((PokeStopZone[0],PokeStopZone[1],PokeStopZone[0]+PokeStopZone[2],PokeStopZone[1]+PokeStopZone[3]) , fill=0)
     img.paste((255, 255, 255), mask=mask)
-    img.save("OUT_POKESTOP.png")
 
     x, y, xs, ys = PokeStopZone
     #Remove Lured pokestop circle
     Frame = img.crop(((x, y, x+xs, y+ys)))
     RemoveColor(Frame, (179, 250, 255), 0.05)
-    Frame.save("OUT_POKESTOP.png")
+    Frame.save("tmp\\OUT_POKESTOP.png")
     pixdata = Frame.load()
     SquareSize = 8
     for xr in range((SquareSize/2), xs-(SquareSize/2)):
@@ -455,9 +455,9 @@ def FindPokemon():
     
     RemoveColorList(Frame, ColorBlackList)
     
-    Frame.save("OUT_COLOR.png")
+    Frame.save("tmp\\OUT_COLOR.png")
     BlackRatio = BlackOrWhite(Frame)
-    Frame.save("OUT_BW.png")
+    Frame.save("tmp\\OUT_BW.png")
     #Frame = Image.open("TEST_POKE.png")
     #Search for big Pokemon before small one
     for i in range(10, 2, -2):
@@ -649,8 +649,11 @@ def PokemonWorker(PokemonPosition):
     PokemonName = GetPokemonName()
     PokemonCP = GetPokemonCP()
     print "[!] This is a %s CP:%d" % (PokemonName, PokemonCP)
-    print GetPokemonIV(PokemonName, PokemonCP)
-    if PokemonName in EvolveList:
+    PokemonIV = GetPokemonIV(PokemonName, PokemonCP)
+    print PokemonIV
+    if (not PokemonIV is None) and PokemonIV['perfection'] >= IVLimit:
+        ClosePokemon()
+    elif PokemonName in EvolveList:
         EvolvePokemon()
         TransferPokemon()
     elif PokemonCP < TransferCPLimit and (not PokemonName in KeepList):
@@ -660,10 +663,6 @@ def PokemonWorker(PokemonPosition):
         
     AddExperience(100)
     
-    #while IsOnMap() == False:
-    #    print "[!] Waiting return to the map"
-    #    time.sleep(1)
-    #    ClearScreen()
     print "[!] Waiting return to map..."
     ReturnToMap()
     return True
