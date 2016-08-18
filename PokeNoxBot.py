@@ -9,6 +9,8 @@ import sys
 import os.path
 import base64
 import datetime
+import PokemonIVCalculator
+import math
 
 import traceback
 
@@ -23,6 +25,7 @@ assert sys.version_info < (3,0)
 #When bag is full, item in this list will be dropped
 ItemToDropList = ["Potion", "Super Potion", "Hyper Potion", "Revive", "Poke Ball", "Razz Berry"]
 EvolveList = ["Pidgey", "Rattata", "Weedle", "Caterpie"]
+KeepList = ["Magikarp"]
 #Pokemon under this limit will be transfered
 TransferCPLimit = 500
 #If pokemon CP > GreatBallCPLimit the GreatBall will be used
@@ -31,6 +34,7 @@ UltraBallCPLimit = 700
 RazzBerryCPLimit = 400
 #WalkSpeed in meters per second, 7 is a safe/good value
 Speed = 7
+IVCalculator = PokemonIVCalculator.PokemonIVCalculator()
 
 #Rotate a python list
 def rotate_list(l,n):
@@ -645,10 +649,11 @@ def PokemonWorker(PokemonPosition):
     PokemonName = GetPokemonName()
     PokemonCP = GetPokemonCP()
     print "[!] This is a %s CP:%d" % (PokemonName, PokemonCP)
+    print GetPokemonIV(PokemonName, PokemonCP)
     if PokemonName in EvolveList:
         EvolvePokemon()
         TransferPokemon()
-    elif PokemonCP < TransferCPLimit:
+    elif PokemonCP < TransferCPLimit and (not PokemonName in KeepList):
         TransferPokemon()
     else:
         ClosePokemon()
@@ -970,7 +975,6 @@ def ReturnToMap():
 def ImgToString(img, ConfigFile=None):
     img.save("tmp\\ocr.png")
     Command = "bin\\tesseract.exe --tessdata-dir bin\\tessdata tmp\\ocr.png tmp\\ocr "
-    
     if ConfigFile != None:
         Command += ""+ConfigFile+" "
     Command += "> nul 2>&1"
@@ -985,7 +989,7 @@ def GetPokemonName():
     img = GetScreen()
     PokeNameZone = (24, 353, 24+430, 353+52)
     Frame = img.crop(((PokeNameZone)))
-    PokemonName = ImgToString(Frame)
+    PokemonName = ImgToString(Frame, "bin\\POKENAME_CONFIG.txt")
     return PokemonName
     
 def IsEvolvable():
@@ -1182,6 +1186,77 @@ def EvolveAllPokemon():
         ClearScreen()
     ClosePokemon()
     ClosePokemonMenu()
+    
+def GetPokemonLevel():
+    arcCenter = 240
+    arcInitialY = 285
+    radius = 183
+    img = GetScreen()
+    pixdata = img.load()
+    trainerLevel = GetTrainerLevel()*2
+    estimatedPokemonLevel = trainerLevel + 3;
+
+    for estPokemonLevel in range(estimatedPokemonLevel, 2, -1):
+        angleInDegrees = (IVCalculator.levels[int(estPokemonLevel - 1)]['cpScalar'] - 0.094) * 202.037116 / IVCalculator.levels[trainerLevel - 1]['cpScalar']
+        if (angleInDegrees > 1.0 and trainerLevel < 60) :
+            angleInDegrees -= 0.5
+        elif (trainerLevel >= 60):
+            angleInDegrees += 0.5
+        angleInRadians = (angleInDegrees + 180) * math.pi / 180.0;
+        x = int(arcCenter + (radius * math.cos(angleInRadians)));
+        y = int(arcInitialY + (radius * math.sin(angleInRadians)));
+        if pixdata[x, y] == (255, 255, 255):
+            return estPokemonLevel
+    return 0
+
+#TODO: A CLASS IS REALLY NEEDED !
+TrainerLevel = 20
+def UpdateTrainerLevel():
+    global TrainerLevel
+    img = GetScreen()
+    TrainerLevelZone = (70, 734, 70+40, 734+23)
+    img = img.crop((TrainerLevelZone))
+    img = ImageOps.grayscale(img)
+    HighContrast(img, 220)
+    img = ImageChops.invert(img)
+    NewTrainerLevel = ImgToString(img, "bin\\LEVEL_CONFIG.txt")
+    NewTrainerLevel = int(NewTrainerLevel)
+    if NewTrainerLevel >= 1 and NewTrainerLevel <= 40 and NewTrainerLevel >= TrainerLevel:
+        TrainerLevel = NewTrainerLevel
+        return True
+    return False
+ 
+def GetTrainerLevel():
+    global TrainerLevel
+    return TrainerLevel
+    
+def GetPokemonHP():
+    img = GetScreen()
+    PokeHPZone = (129, 418, 223+129, 31+418)
+    img = img.crop((PokeHPZone))
+    PokemonHP = ImgToString(img, "bin\\HP_CONFIG.txt")
+    PokemonHP = int(PokemonHP.split('/')[1])
+    return PokemonHP
+    
+def GetPokemonStarDust():
+    img = GetScreen()
+    PokeHPZone = (262, 635, 262+66, 635+21)
+    img = img.crop((PokeHPZone))
+    PokemonStartDust = ImgToString(img, "bin\\STARDUST_CONFIG.txt")
+    PokemonStartDust = int(PokemonStartDust)
+    return PokemonStartDust    
+  
+def GetPokemonIV(PokemonName=None, PokemonCP=None):
+    PokemonLevel = GetPokemonLevel()
+    if PokemonName == None:
+        PokemonName = GetPokemonName()
+    if PokemonCP == None:
+        PokemonCP = GetPokemonCP()
+    PokemonHP = GetPokemonHP()
+    PokemonStarDust = GetPokemonStarDust()
+    return IVCalculator.EvaluatePokemon(PokemonName, PokemonCP, PokemonHP, PokemonStarDust, True, PokemonLevel)
+    
+     
 #Core...
 
 #AddEggInIncubator()
@@ -1214,7 +1289,31 @@ def EvolveAllPokemon():
 #print GetPokemonCP()
 #EvolveAllPokemon()
 #print GetPokemonFightNameCP()
-#sys.exit(0)
+#PokemonLevel = GetPokemonLevel()
+#PokemonName = GetPokemonName()
+#PokemonCP = GetPokemonCP()
+#PokemonHP = GetPokemonHP()
+#PokemonStarDust = GetPokemonStarDust()
+#while True:
+#    UpdateTrainerLevel()
+#    print GetTrainerLevel()
+#    ClearScreen()
+#print IVCalculator.EvaluatePokemon(PokemonName, PokemonCP, PokemonHP, PokemonStarDust, True, PokemonLevel)
+# OpenPokemonMenu()
+# #Tap on Upper Left Pokemon
+# Tap(77, 239)
+# time.sleep(0.5)
+# ClearScreen()
+# while True:
+    # PokemonIV = GetPokemonIV()
+    # if PokemonIV == None:
+        # break
+    # print PokemonIV
+    # #Go to Next Pokemon
+    # Tap(460, 200)
+    # time.sleep(1)
+    # ClearScreen()
+# sys.exit(0)
 
 
 
@@ -1249,6 +1348,7 @@ while True:
     for geo_point in loop_geo_points:
         if Count%(50/Speed)==0:
             ReturnToMap()
+            UpdateTrainerLevel()
             SetPosition(geo_point)
             #Waiting for end of running...
             time.sleep(4.5)
