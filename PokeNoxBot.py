@@ -1219,10 +1219,13 @@ def UpdateTrainerLevel():
     HighContrast(img, 220)
     img = ImageChops.invert(img)
     NewTrainerLevel = ImgToString(img, "bin\\LEVEL_CONFIG.txt")
-    NewTrainerLevel = int(NewTrainerLevel)
-    if NewTrainerLevel >= 1 and NewTrainerLevel <= 40 and NewTrainerLevel >= TrainerLevel:
-        TrainerLevel = NewTrainerLevel
-        return True
+    try:
+        NewTrainerLevel = int(NewTrainerLevel)
+        if NewTrainerLevel >= 1 and NewTrainerLevel <= 40 and NewTrainerLevel >= TrainerLevel:
+            TrainerLevel = NewTrainerLevel
+            return True
+    except:
+        pass
     return False
  
 def GetTrainerLevel():
