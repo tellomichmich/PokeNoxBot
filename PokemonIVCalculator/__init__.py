@@ -1,3 +1,5 @@
+#!/usr/bin/python
+# -*- coding: latin-1 -*-
 import math
 
 class PokemonIVCalculator:
@@ -200,7 +202,7 @@ class PokemonIVCalculator:
      },
      {
       "id": 29,
-      "name": "Nidoran_female",
+      "name": "Nidoran♀",
       "stamina": 110,
       "attack": 100,
       "defense": 104
@@ -221,7 +223,7 @@ class PokemonIVCalculator:
      },
      {
       "id": 32,
-      "name": "Nidoran_male",
+      "name": "Nidoran♂",
       "stamina": 92,
       "attack": 110,
       "defense": 94
