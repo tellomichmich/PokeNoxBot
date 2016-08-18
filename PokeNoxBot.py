@@ -196,9 +196,9 @@ def GetPokemonFightNameCP():
         PokemonName = None
         PokemonCP = None
         img1 = GetScreen()
-        img1 = img1.crop(((35, 210, 35+387, 210+90)))
+        img1 = img1.crop(((35, 205, 35+387, 205+90)))
         img1 = ImageOps.grayscale(img1)
-        ContrastPower = 223+random.randint(-10, 10)
+        ContrastPower = 216+random.randint(-10, 10)
         HighContrast(img1, ContrastPower)
         img1.save("tmp\\OUT_POKEFIGHT.png")
         PokemonNameCP =  ImgToString(img1, "bin\\POKENAMECP_CONFIG.txt").split(' ')
@@ -228,7 +228,7 @@ def GetPokemonFightNameCP():
             if PokemonNameCP[2] == "CP":
                 PokemonName = PokemonNameCP[1]
                 PokemonCP = PokemonNameCP[3]
-        print "-> %s %s" % (PokemonName, PokemonCP)
+        #print "-> %s %s" % (PokemonName, PokemonCP)
         if PokemonCP != None and PokemonName != None:
             #Little correction
             PokemonCP = PokemonCP.replace('O', '0')
@@ -242,8 +242,8 @@ def GetPokemonFightNameCP():
                 PokemonCP = "9999"
             try:
                 PokemonCP = int(PokemonCP)
-                print ContrastPower
-                return (PokemonName, PokemonCP)
+                #print ContrastPower
+                return (FindRealPokemonName(PokemonName), PokemonCP)
             except:
                 pass
         ClearScreen()
@@ -989,7 +989,7 @@ def GetPokemonName():
     PokeNameZone = (24, 353, 24+430, 353+52)
     Frame = img.crop(((PokeNameZone)))
     PokemonName = ImgToString(Frame, "bin\\POKENAME_CONFIG.txt")
-    return PokemonName
+    return FindRealPokemonName(PokemonName)
     
 def IsEvolvable():
     img = GetScreen()
@@ -1254,7 +1254,39 @@ def GetPokemonIV(PokemonName=None, PokemonCP=None):
     PokemonHP = GetPokemonHP()
     PokemonStarDust = GetPokemonStarDust()
     return IVCalculator.EvaluatePokemon(PokemonName, PokemonCP, PokemonHP, PokemonStarDust, True, PokemonLevel)
+
+def levenshtein_distance(first, second):
+    """Find the Levenshtein distance between two strings."""
+    if len(first) > len(second):
+        first, second = second, first
+    if len(second) == 0:
+        return len(first)
+    first_length = len(first) + 1
+    second_length = len(second) + 1
+    distance_matrix = [[0] * second_length for x in range(first_length)]
+    for i in range(first_length):
+       distance_matrix[i][0] = i
+    for j in range(second_length):
+       distance_matrix[0][j]=j
+    for i in xrange(1, first_length):
+        for j in range(1, second_length):
+            deletion = distance_matrix[i-1][j] + 1
+            insertion = distance_matrix[i][j-1] + 1
+            substitution = distance_matrix[i-1][j-1]
+            if first[i-1] != second[j-1]:
+                substitution += 1
+            distance_matrix[i][j] = min(insertion, deletion, substitution)
+    return distance_matrix[first_length-1][second_length-1]
     
+def FindRealPokemonName(PokemonName):
+    MinScore = 9999
+    RealPokemonName = None
+    for pokemon in IVCalculator.PokemonInfoList:
+        CurrentScore = levenshtein_distance(PokemonName, pokemon['name'])
+        if CurrentScore < MinScore:
+            MinScore = CurrentScore
+            RealPokemonName = pokemon['name']
+    return RealPokemonName
      
 #Core...
 
@@ -1312,7 +1344,8 @@ def GetPokemonIV(PokemonName=None, PokemonCP=None):
     # Tap(460, 200)
     # time.sleep(1)
     # ClearScreen()
-# sys.exit(0)
+#print FindRealPokemonName("Ridgc@çcotta")
+#sys.exit(0)
 
 
 
