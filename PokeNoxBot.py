@@ -1210,7 +1210,7 @@ def GetPokemonLevel():
     return 0
 
 #TODO: A CLASS IS REALLY NEEDED !
-TrainerLevel = 20
+TrainerLevel = -1
 def UpdateTrainerLevel():
     global TrainerLevel
     img = GetScreen()
