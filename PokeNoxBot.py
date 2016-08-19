@@ -189,22 +189,32 @@ def HighContrast(img, Limit=126):
                 pixdata1[xr, yr] = 255
             else:
                 pixdata1[xr, yr] = 0
-            
+
+def OnlyPureWhite(img1):
+    pixdata1 = img1.load()
+    output = img1.copy()
+    pixdataout = output.load()
+    for xr in xrange(img1.size[0]):
+        for yr in xrange(img1.size[1]):
+            if pixdata1[xr, yr] != (255, 255, 255):
+                pixdataout[xr, yr] = (255, 255, 255)
+            else:
+                pixdataout[xr, yr] = (0, 0, 0)
+    return output
+               
 #This is a best effort implementation !            
 def GetPokemonFightNameCP():
-    for i in range(10):
+    for i in range(1000):
         PokemonName = None
         PokemonCP = None
         img1 = GetScreen()
-        img1 = img1.crop(((35, 205, 35+387, 205+90)))
-        img1 = ImageOps.grayscale(img1)
-        ContrastPower = 216+random.randint(-10, 10)
-        HighContrast(img1, ContrastPower)
-        img1.save("tmp\\OUT_POKEFIGHT.png")
-        #PokemonNameCP =  ImgToString(img1, "bin\\POKENAMECP_CONFIG.txt").split(' ')
-        PokemonNameCP =  ImgToString(img1).split(' ')
-        print PokemonNameCP
-        
+        Frame = img1.crop(((50, 190, 50+350, 190+80)))
+        Frame = ImageOps.posterize(Frame, 6)
+        RemoveColor(Frame, (255, 255, 255), 0.25)
+        Frame = OnlyPureWhite(Frame)
+        PokemonNameCP = ImgToString(Frame, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789♀♂")
+        PokemonNameCP = PokemonNameCP.split(' ')
+        #print PokemonNameCP
         #New pokenom don't have the pokeball in front of name
         #['BLABLA', 'CP123'] 
         if len(PokemonNameCP) == 2:
@@ -243,8 +253,10 @@ def GetPokemonFightNameCP():
                 PokemonCP = "9999"
             try:
                 PokemonCP = int(PokemonCP)
-                #print ContrastPower
-                return (FindRealPokemonName(PokemonName), PokemonCP)
+                PokemonName = FindRealPokemonName(PokemonName)
+                
+                img1.save("tmp\\DEBUG_POKEFIGHT_%s_%d.png" % (PokemonName, PokemonCP))      
+                return (PokemonName, PokemonCP)
             except:
                 pass
         ClearScreen()
@@ -974,24 +986,28 @@ def ReturnToMap():
     RestartApplication()
     return False
    
-def ImgToString(img, ConfigFile=None):
+def ImgToString(img, CharSet=None):
     img.save("tmp\\ocr.png")
     Command = "bin\\tesseract.exe --tessdata-dir bin\\tessdata tmp\\ocr.png tmp\\ocr "
-    if ConfigFile != None:
-        Command += ""+ConfigFile+" "
+    if CharSet != None:
+        Command += "-c tessedit_char_whitelist="+CharSet+" "
     Command += "> nul 2>&1"
     #print Command
     os.system(Command)
-    f = open("tmp\\ocr.txt")
-    StringContent = f.readline().strip()
-    f.close()
-    return StringContent
+    #Get the largest line in txt
+    with open("tmp\\ocr.txt") as f:
+        content = f.read().splitlines()
+    OutputLine = ""
+    for line in content:
+        if len(line) > len(OutputLine):
+            OutputLine = line
+    return OutputLine
 
 def GetPokemonName():
     img = GetScreen()
     PokeNameZone = (24, 353, 24+430, 353+52)
     Frame = img.crop(((PokeNameZone)))
-    PokemonName = ImgToString(Frame, "bin\\POKENAME_CONFIG.txt")
+    PokemonName = ImgToString(Frame, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz♀♂")
     return FindRealPokemonName(PokemonName)
     
 def IsEvolvable():
@@ -1050,7 +1066,7 @@ def CleanInventory():
             ItemNameZone = (152, 140+(170*i), 152+272, 140+(170*i)+39)
             Frame = img.crop(((ItemNameZone)))
             #TODO: use user-patterns
-            ItemName = ImgToString(Frame).replace("\xc3\xa9","e")
+            ItemName = ImgToString(Frame,"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
             if ItemName == "":
                 #Close Inventory
                 Tap(236, 736)
@@ -1086,7 +1102,7 @@ def UseItem(ItemToUseName):
         ItemNameZone = (152, 140+(170*i), 152+272, 140+(170*i)+39)
         Frame = img.crop(((ItemNameZone)))
         #TODO: use user-patterns
-        ItemName = ImgToString(Frame).replace("\xc3\xa9","e")
+        ItemName = ImgToString(Frame, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
         if ItemName == "":
             break
         if ItemName in ItemToUseName:
@@ -1103,7 +1119,7 @@ def GetPokemonCP():
         Frame = img.crop(((160, 49, 160+121, 49+38)))
         RemoveColor(Frame, (255, 255, 255), 0.2)
         BlackOrWhite(Frame)
-        PokemonCP = ImgToString(Frame, "bin\\CP_CONFIG.txt").upper()
+        PokemonCP = ImgToString(Frame, "CP01234567890").upper()
         #print PokemonCP
         if PokemonCP[:2] == "CP":
             try:  
@@ -1221,7 +1237,7 @@ def UpdateTrainerLevel():
     img = ImageOps.grayscale(img)
     HighContrast(img, 220)
     img = ImageChops.invert(img)
-    NewTrainerLevel = ImgToString(img, "bin\\LEVEL_CONFIG.txt")
+    NewTrainerLevel = ImgToString(img, "0123456789")
     try:
         NewTrainerLevel = int(NewTrainerLevel)
         if NewTrainerLevel >= 1 and NewTrainerLevel <= 40 and NewTrainerLevel >= TrainerLevel:
@@ -1239,7 +1255,7 @@ def GetPokemonHP():
     img = GetScreen()
     PokeHPZone = (129, 418, 223+129, 31+418)
     img = img.crop((PokeHPZone))
-    PokemonHP = ImgToString(img, "bin\\HP_CONFIG.txt")
+    PokemonHP = ImgToString(img, "HP01234567890/")
     PokemonHP = int(PokemonHP.split('/')[1])
     return PokemonHP
     
@@ -1247,7 +1263,7 @@ def GetPokemonStarDust():
     img = GetScreen()
     PokeHPZone = (262, 635, 262+66, 635+21)
     img = img.crop((PokeHPZone))
-    PokemonStartDust = ImgToString(img, "bin\\STARDUST_CONFIG.txt")
+    PokemonStartDust = ImgToString(img, "0123456789")
     PokemonStartDust = int(PokemonStartDust)
     return PokemonStartDust    
   
