@@ -22,21 +22,8 @@ import re
 assert sys.version_info >= (2,7)
 assert sys.version_info < (3,0)
 
-#When bag is full, item in this list will be dropped
-ItemToDropList = ["Potion", "Super Potion", "Hyper Potion", "Revive", "Poke Ball", "Razz Berry"]
-EvolveList = ["Pidgey", "Rattata", "Weedle", "Caterpie"]
-KeepList = ["Magikarp"]
-#Pokemon under this limit will be transfered
-TransferCPLimit = 500
-#If pokemon CP > GreatBallCPLimit the GreatBall will be used
-GreatBallCPLimit = 600
-UltraBallCPLimit = 700
-RazzBerryCPLimit = 400
-#WalkSpeed in meters per second, 7 is a safe/good value
-Speed = 7
+config = {}
 IVCalculator = PokemonIVCalculator.PokemonIVCalculator()
-IVLimit = 0.7
-
 
 #Rotate a python list
 def rotate_list(l,n):
@@ -489,7 +476,7 @@ def FindPokemon():
 def ThrowPokeball(Power):
     #Far 100
     #Near 400
-    SwipeTime(236, 780, 236, 30+Power, 200)
+    SwipeTime(236, 780, 236, Power, 200)
     #Fast Pokeball return
     #SwipeTime(73, 600, 245, 734, 500)
     ClearScreen()
@@ -523,7 +510,19 @@ def IsCatchSucess():
     if IsColorInCeil(pixdata[44, 227], (254, 255, 254), 0.005) and IsColorInCeil(pixdata[22, 518], (247, 255, 245), 0.01):
         return True
     return False
-
+    
+def GetPokeballLeft():
+    img = GetScreen()
+    img = img.crop(((297, 755, 297+28, 755+19)))
+    RemoveColor(img, (255, 255, 255), 0.1)
+    img = OnlyPureWhite(img)
+    #print int(ImgToString(img, "0123456789"))
+    return int(ImgToString(img, "0123456789"))
+    
+def IsNoMorePokeBall():
+    img = GetScreen()
+    pixdata = img.load()
+    return pixdata[283, 737] == (179, 251, 165)
     
 def PokemonWorker(PokemonPosition):
     print "[!] Going to fight with %d %d !" % (PokemonPosition[0], PokemonPosition[1])
@@ -572,6 +571,13 @@ def PokemonWorker(PokemonPosition):
     if bIsPokemonFightOpened == False:  
         #This is a big fail maybe a gym detected as Pokemon
         return None
+        
+    if IsNoMorePokeBall() == True:
+        print "[!] No more pokeball... leaving fight !"
+        ClosePokemonFight()
+        return None
+    
+    PokeBallLeft = GetPokeballLeft()
     
     #Get the Name and the CP of this Pokemon
     (PokemonName, PokemonCP) = GetPokemonFightNameCP()
@@ -579,28 +585,37 @@ def PokemonWorker(PokemonPosition):
     
     #Select the right Poke Ball
     SelectedPokeball = "Poke Ball"
-    if PokemonCP >= UltraBallCPLimit and GetTrainerLevel() >= 12:
-        print "[!] Using a Ultra Ball %d > %d" % (PokemonCP, UltraBallCPLimit)
+    if PokemonCP >= config['UltraBallCPLimit'] and GetTrainerLevel() >= 12:
+        print "[!] Using a Ultra Ball %d > %d" % (PokemonCP, config['UltraBallCPLimit'])
         if UseUltraBall() == False:
             if UseGreatBall() == True:
                 SelectedPokeball = "Great Ball" 
         else:
            SelectedPokeball = "Ultra Ball" 
-    elif PokemonCP >= GreatBallCPLimit and GetTrainerLevel() >= 20:
-        print "[!] Using a Great Ball %d > %d" % (PokemonCP, GreatBallCPLimit)
+    elif PokemonCP >= config['GreatBallCPLimit'] and GetTrainerLevel() >= 20:
+        print "[!] Using a Great Ball %d > %d" % (PokemonCP, config['GreatBallCPLimit'])
         if UseGreatBall() == True:
             SelectedPokeball = "Great Ball" 
 
     #Use a Razz Berry if one
-    if PokemonCP >= RazzBerryCPLimit and GetTrainerLevel() >= 8:
+    if PokemonCP >= config['RazzBerryCPLimit'] and GetTrainerLevel() >= 8:
         if UseRazzBerry() == True:
             print "[!] Using Razz Berry"
 
     bIsPokemonHitted = False
     ThrowCount = 0
     while True:
+        print "[!] %d Pokeball left" % (PokeBallLeft)
+        if PokeBallLeft == 0:
+            if IsNoMorePokeBall() == True:
+                print "[!] No more pokeball... leaving fight !"
+                ClosePokemonFight()
+                return None
+            
+            PokeBallLeft = GetPokeballLeft()
+        
         if bIsPokemonHitted == False:
-            LastPower = random.randint(0,500)
+            LastPower = random.randint(10,500)
         else:
             print "[!] Using last "+SelectedPokeball+" power"
         if ThrowCount > 30 :
@@ -641,15 +656,17 @@ def PokemonWorker(PokemonPosition):
             print "[!] Pokemon flee !"
             return False
         
-        if StressCount == 0:
-            print "[!] No more pokeball !"
-            ClosePokemonFight()
-            return None
+        # if StressCount == 0:
+            # print "[!] No more pokeball !"
+            # ClosePokemonFight()
+            # return None
             
         if StressCount >= 4:
             bIsPokemonHitted = True
         else:
             bIsPokemonHitted = False
+        
+        PokeBallLeft -= 1
 
     #Let the popup to fully open
     time.sleep(0.5)
@@ -672,12 +689,12 @@ def PokemonWorker(PokemonPosition):
     print "[!] This is a %s CP:%d" % (PokemonName, PokemonCP)
     PokemonIV = GetPokemonIV(PokemonName, PokemonCP)
     print PokemonIV
-    if (not PokemonIV is None) and PokemonIV['perfection'] >= IVLimit:
+    if (not PokemonIV is None) and PokemonIV['perfection'] >= config['IVLimit']:
         ClosePokemon()
-    elif PokemonName in EvolveList:
+    elif PokemonName in config['EvolveList']:
         EvolvePokemon()
         TransferPokemon()
-    elif PokemonCP < TransferCPLimit and (not PokemonName in KeepList):
+    elif PokemonCP < config['TransferCPLimit'] and (not PokemonName in config['KeepList']):
         TransferPokemon()
     else:
         ClosePokemon()
@@ -1107,7 +1124,7 @@ def CleanInventory():
                 ClearScreen()
                 return False
             ItemName = FindRealItemName(ItemName)
-            if ItemName in ItemToDropList:
+            if ItemName in config['ItemToDropList']:
                 print "[!] Dropping %s " % (ItemName)
                 #Tap on trash
                 Tap(440, 140+(170*i))
@@ -1224,13 +1241,13 @@ def CleanAllPokemon():
         #print GetPokemonCP()
         PokemonIV = GetPokemonIV()
         print PokemonIV
-        if (not PokemonIV is None) and PokemonIV['perfection'] <= IVLimit:
+        if (not PokemonIV is None) and PokemonIV['perfection'] <= config['IVLimit']:
             bIsForwardNeeded = False
-            if IsEvolvable() == True:# and GetPokemonName() in EvolveList:
+            if IsEvolvable() == True and GetPokemonName() in config['EvolveList']:
                 EvolvePokemon()
                 ClosePokemon()
                 bIsForwardNeeded = True
-            elif GetPokemonCP() < TransferCPLimit:
+            elif GetPokemonCP() < config['TransferCPLimit']:
                 TransferPokemon()
                 bIsForwardNeeded = True
                 
@@ -1421,11 +1438,19 @@ def FindRealPokemonName(PokemonName):
 #SetTrainerLevel(21)
 #print GetPokemonIV()
 #print FindRealItemName("ORgjyri")
+    
+#print IsNoMorePokeBall()
+#print GetPokeballLeft()
 #sys.exit(0)
 
+#Load config file
+with open('config.json', 'r') as f:
+    config = json.load(f)
+    
+print config
+#sys.exit(0)
 
-
-loop_geo_points = geo_point_from_kml("Levalois.kml", Speed)
+loop_geo_points = geo_point_from_kml("Levalois.kml", config['Speed'])
 
 #Searching for the nearest point 
 if os.path.isfile("tmp/saved_position.txt"):
@@ -1454,7 +1479,7 @@ SetPosition(loop_geo_points[0])
 StartTime = time.time()
 while True:
     for geo_point in loop_geo_points:
-        if Count%(50/Speed)==0:
+        if Count%(50/config['Speed'])==0:
             ReturnToMap()
             UpdateTrainerLevel()
             SetPosition(geo_point)

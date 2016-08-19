@@ -1,0 +1,11 @@
+{
+    "ItemToDropList" : ["Potion", "Super Potion", "Hyper Potion", "Revive", "Poke Ball", "Razz Berry"],
+    "EvolveList" : ["Pidgey", "Rattata", "Weedle", "Caterpie"],
+    "KeepList" : ["Magikarp"],
+    "TransferCPLimit" : 500,
+    "GreatBallCPLimit" : 600,
+    "UltraBallCPLimit" : 700,
+    "RazzBerryCPLimit" : 400,
+    "Speed" : 7,
+    "IVLimit" : 0.7
+}
