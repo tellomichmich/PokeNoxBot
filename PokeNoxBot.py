@@ -37,6 +37,7 @@ Speed = 7
 IVCalculator = PokemonIVCalculator.PokemonIVCalculator()
 IVLimit = 0.7
 
+
 #Rotate a python list
 def rotate_list(l,n):
     return l[-n:] + l[:-n]
@@ -1056,6 +1057,32 @@ def IsEggHatched():
     return IsColorInCeil(pixdata[18, 780], (204, 245, 237), 0.005)
     
 
+def FindRealItemName(ItemName):
+    ItemNameList = [
+                    "Potion",
+                    "Super Potion",
+                    "Hyper Potion",
+                    "Max Potion",
+                    "Incense",
+                    "Revive",
+                    "Max Revive",
+                    "Egg Incubator",
+                    "Camera",
+                    "Poke Ball",
+                    "Great Ball",
+                    "Ultra Ball",
+                    "Lure Module",
+                    "Lucky Egg",
+                    "Razz Berry"]
+    RealItemName = ""
+    MinScore = 9999
+    for i in ItemNameList:
+        CurrentScore = levenshtein_distance(ItemName, i)
+        if CurrentScore < MinScore:
+            MinScore = CurrentScore
+            RealItemName = i
+    return RealItemName
+                 
 def CleanInventory():
     print "[!] Clean inventory..."
     if IsOnMap() == False:
@@ -1073,19 +1100,20 @@ def CleanInventory():
             ItemNameZone = (152, 140+(170*i), 152+272, 140+(170*i)+39)
             Frame = img.crop(((ItemNameZone)))
             #TODO: use user-patterns
-            ItemName = ImgToString(Frame,"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
-            if ItemName == "":
+            ItemName = ImgToString(Frame,"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzé")
+            if len(ItemName) < 4 or len(ItemName) > 20:
                 #Close Inventory
                 Tap(236, 736)
                 ClearScreen()
                 return False
+            ItemName = FindRealItemName(ItemName)
             if ItemName in ItemToDropList:
                 print "[!] Dropping %s " % (ItemName)
                 #Tap on trash
                 Tap(440, 140+(170*i))
                 time.sleep(1)
                 #1sec for 20 elements
-                SwipeTime(351, 355, 351, 355, 2000)
+                SwipeTime(351, 355, 351, 355, 4000)
                 #Tap OK
                 Tap(236, 511)
                 time.sleep(0.5)
@@ -1112,6 +1140,7 @@ def UseItem(ItemToUseName):
         ItemName = ImgToString(Frame, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
         if ItemName == "":
             break
+        ItemName = FindRealItemName(ItemName)
         if ItemName in ItemToUseName:
             Tap(152, 140+(170*i))
             return True
@@ -1391,6 +1420,7 @@ def FindRealPokemonName(PokemonName):
 #CleanAllPokemon()
 #SetTrainerLevel(21)
 #print GetPokemonIV()
+#print FindRealItemName("ORgjyri")
 #sys.exit(0)
 
 
