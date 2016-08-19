@@ -1489,7 +1489,7 @@ while True:
             print "[!] Looking around..."
             
             #Pokestop first to grab some pokeball
-            while True:
+            while config['ProcessPokestop']:
                 print "[!] Looking for Pokestop"
                 PokeStopPosition = FindPokestop()
                 if PokeStopPosition is None:
@@ -1499,7 +1499,7 @@ while True:
                     print "[!] Something failed..."
                     break
             
-            while True:
+            while config['ProcessPokemon']:
                 print "[!] Looking for pokemon"
                 #Clearing the screen because PokestopWorker can be long...
                 ClearScreen()

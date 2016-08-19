@@ -7,5 +7,7 @@
     "UltraBallCPLimit" : 700,
     "RazzBerryCPLimit" : 400,
     "Speed" : 7,
-    "IVLimit" : 0.7
+    "IVLimit" : 0.7,
+    "ProcessPokemon" : true,
+    "ProcessPokestop" : true
 }
