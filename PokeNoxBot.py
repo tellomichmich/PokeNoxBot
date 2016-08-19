@@ -361,7 +361,7 @@ def BlackOrWhite(img):
     
 def IsDay():
     Hour = datetime.datetime.now().hour  
-    if Hour >= 7 and Hour <= 19:
+    if Hour >= 7 and Hour < 19:
         return True
     return False
 
