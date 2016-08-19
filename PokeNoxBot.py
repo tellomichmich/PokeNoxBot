@@ -35,7 +35,7 @@ RazzBerryCPLimit = 400
 #WalkSpeed in meters per second, 7 is a safe/good value
 Speed = 7
 IVCalculator = PokemonIVCalculator.PokemonIVCalculator()
-IVLimit = 0.9
+IVLimit = 0.7
 
 #Rotate a python list
 def rotate_list(l,n):
@@ -212,14 +212,13 @@ def GetPokemonFightNameCP():
         Frame = ImageOps.posterize(Frame, 6)
         RemoveColor(Frame, (255, 255, 255), 0.25)
         Frame = OnlyPureWhite(Frame)
-        PokemonNameCP = ImgToString(Frame, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789♀♂")
+        PokemonNameCP = ImgToString(Frame, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789♀♂?")
         PokemonNameCP = PokemonNameCP.split(' ')
-        #print PokemonNameCP
+        print PokemonNameCP
         #New pokenom don't have the pokeball in front of name
         #['BLABLA', 'CP123'] 
         if len(PokemonNameCP) == 2:
             CPMark = PokemonNameCP[1][:2]
-            CPMark = CPMark.replace('(', 'C')
             if CPMark == "CP":
                 PokemonName = PokemonNameCP[0]
                 PokemonCP = PokemonNameCP[1][2:]
@@ -227,16 +226,20 @@ def GetPokemonFightNameCP():
         #['@', 'BLABLA', 'CP123']
         elif len(PokemonNameCP) == 3:
             CPMark = PokemonNameCP[2][:2]
-            CPMark = CPMark.replace('(', 'C')
             if CPMark == "CP":
                 PokemonName = PokemonNameCP[1]
                 PokemonCP = PokemonNameCP[2][2:]
-            #TODO ['BLABLA', 'CP', '123']
+            else:
+                #New pokenom don't have the pokeball in front of name
+                #['BLABLA', 'CP', '123']
+                CPMark = PokemonNameCP[1]
+                if CPMark == "CP":
+                    PokemonName = PokemonNameCP[0]
+                    PokemonCP = PokemonNameCP[2]
         #['@', 'BLABLA', 'CP', '123']
         elif len(PokemonNameCP) == 4:
             CPMark = PokemonNameCP[2]
-            CPMark = CPMark.replace('(', 'C')
-            if PokemonNameCP[2] == "CP":
+            if CPMark == "CP":
                 PokemonName = PokemonNameCP[1]
                 PokemonCP = PokemonNameCP[3]
         #print "-> %s %s" % (PokemonName, PokemonCP)
@@ -575,20 +578,20 @@ def PokemonWorker(PokemonPosition):
     
     #Select the right Poke Ball
     SelectedPokeball = "Poke Ball"
-    if PokemonCP >= UltraBallCPLimit:
+    if PokemonCP >= UltraBallCPLimit and GetTrainerLevel() >= 12:
         print "[!] Using a Ultra Ball %d > %d" % (PokemonCP, UltraBallCPLimit)
         if UseUltraBall() == False:
             if UseGreatBall() == True:
                 SelectedPokeball = "Great Ball" 
         else:
            SelectedPokeball = "Ultra Ball" 
-    elif PokemonCP >= GreatBallCPLimit:
+    elif PokemonCP >= GreatBallCPLimit and GetTrainerLevel() >= 20:
         print "[!] Using a Great Ball %d > %d" % (PokemonCP, GreatBallCPLimit)
         if UseGreatBall() == True:
             SelectedPokeball = "Great Ball" 
 
     #Use a Razz Berry if one
-    if PokemonCP >= RazzBerryCPLimit:
+    if PokemonCP >= RazzBerryCPLimit and GetTrainerLevel() >= 8:
         if UseRazzBerry() == True:
             print "[!] Using Razz Berry"
 
@@ -658,8 +661,10 @@ def PokemonWorker(PokemonPosition):
         Tap(50,50)
         time.sleep(0.5)
         ClearScreen()
-    print "[!] On Pokemon"
-        
+    print "[!] Getting Pokemon information"
+    #Waiting Rewards to disappear
+    time.sleep(2)
+    ClearScreen()
     #We are here on the pokemon statistics
     PokemonName = GetPokemonName()
     PokemonCP = GetPokemonCP()
@@ -991,9 +996,10 @@ def ImgToString(img, CharSet=None):
     Command = "bin\\tesseract.exe --tessdata-dir bin\\tessdata tmp\\ocr.png tmp\\ocr "
     if CharSet != None:
         Command += "-c tessedit_char_whitelist="+CharSet+" "
-    Command += "> nul 2>&1"
+    Command += " --psm 7 > nul 2>&1"
     #print Command
     os.system(Command)
+    #TODO: Remove this, as we psm 7
     #Get the largest line in txt
     with open("tmp\\ocr.txt") as f:
         content = f.read().splitlines()
@@ -1178,26 +1184,34 @@ def ClosePokemonMemu():
     ClearScreen()
     
 #TODO: Optimize this!
-def EvolveAllPokemon():
+def CleanAllPokemon():
     OpenPokemonMenu()
-    #Tap on Upper Left Pokemon
+    #Tap on Top Left Pokemon
     Tap(77, 239)
     time.sleep(0.5)
     ClearScreen()
     for i in range(250):
         #print GetPokemonCP()
-        if IsEvolvable() == True and GetPokemonName() in EvolveList:
-            print "Evolvable"
-            EvolvePokemon()
-            ClosePokemon()
-            #Tap on Upper Left Pokemon
-            Tap(77, 239)
-            time.sleep(0.5)
-            #This is not optimized at all !
-            for j in range(i):
-                #Go to Next Pokemon
-                Tap(460, 200)
-            ClearScreen()
+        PokemonIV = GetPokemonIV()
+        print PokemonIV
+        if (not PokemonIV is None) and PokemonIV['perfection'] <= IVLimit:
+            bIsForwardNeeded = False
+            if IsEvolvable() == True:# and GetPokemonName() in EvolveList:
+                EvolvePokemon()
+                ClosePokemon()
+                bIsForwardNeeded = True
+            elif GetPokemonCP() < TransferCPLimit:
+                TransferPokemon()
+                bIsForwardNeeded = True
+                
+            if bIsForwardNeeded == True:
+                #Tap on Upper Top Pokemon
+                Tap(77, 239)
+                time.sleep(0.5)
+                #This is not optimized at all !
+                for j in range(i-1):
+                    #Go to Next Pokemon
+                    Tap(460, 200)
         #Go to Next Pokemon
         Tap(460, 200)
         time.sleep(1)
@@ -1229,10 +1243,17 @@ def GetPokemonLevel():
 
 #TODO: A CLASS IS REALLY NEEDED !
 TrainerLevel = -1
-def UpdateTrainerLevel():
+def GetTrainerLevel():
     global TrainerLevel
+    return TrainerLevel
+    
+def SetTrainerLevel(NewTrainerLevel):
+    global TrainerLevel
+    TrainerLevel = NewTrainerLevel
+    
+def UpdateTrainerLevel():
     img = GetScreen()
-    TrainerLevelZone = (70, 734, 70+40, 734+23)
+    TrainerLevelZone = (65, 730, 65+45, 730+25)
     img = img.crop((TrainerLevelZone))
     img = ImageOps.grayscale(img)
     HighContrast(img, 220)
@@ -1240,16 +1261,14 @@ def UpdateTrainerLevel():
     NewTrainerLevel = ImgToString(img, "0123456789")
     try:
         NewTrainerLevel = int(NewTrainerLevel)
-        if NewTrainerLevel >= 1 and NewTrainerLevel <= 40 and NewTrainerLevel >= TrainerLevel:
-            TrainerLevel = NewTrainerLevel
+        if NewTrainerLevel >= 1 and NewTrainerLevel <= 40 and NewTrainerLevel >= GetTrainerLevel():
+            SetTrainerLevel(NewTrainerLevel)
             return True
     except:
         pass
     return False
  
-def GetTrainerLevel():
-    global TrainerLevel
-    return TrainerLevel
+
     
 def GetPokemonHP():
     img = GetScreen()
@@ -1367,6 +1386,10 @@ def FindRealPokemonName(PokemonName):
     # time.sleep(1)
     # ClearScreen()
 #print FindRealPokemonName("Ridgc@çcotta")
+#UpdateTrainerLevel()
+#CleanAllPokemon()
+#SetTrainerLevel(21)
+#print GetPokemonIV()
 #sys.exit(0)
 
 
