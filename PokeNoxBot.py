@@ -201,7 +201,8 @@ def GetPokemonFightNameCP():
         ContrastPower = 216+random.randint(-10, 10)
         HighContrast(img1, ContrastPower)
         img1.save("tmp\\OUT_POKEFIGHT.png")
-        PokemonNameCP =  ImgToString(img1, "bin\\POKENAMECP_CONFIG.txt").split(' ')
+        #PokemonNameCP =  ImgToString(img1, "bin\\POKENAMECP_CONFIG.txt").split(' ')
+        PokemonNameCP =  ImgToString(img1).split(' ')
         print PokemonNameCP
         
         #New pokenom don't have the pokeball in front of name
