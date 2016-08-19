@@ -361,7 +361,7 @@ def BlackOrWhite(img):
     
 def IsDay():
     Hour = datetime.datetime.now().hour  
-    if Hour > 7 and Hour < 19:
+    if Hour >= 7 and Hour <= 19:
         return True
     return False
 
@@ -403,7 +403,7 @@ def FindPokemon():
     Frame = ImageOps.posterize(Frame, 2)
     
     ColorBlackList = []
-    if IsDay():
+    if IsDay() == True:
         #Day Road
         ColorBlackList.append((64, 128, 128))
         ColorBlackList.append((0, 128, 128))
@@ -473,6 +473,8 @@ def ThrowPokeball(Power):
     #Far 100
     #Near 400
     SwipeTime(236, 780, 236, 30+Power, 200)
+    #Fast Pokeball return
+    #SwipeTime(73, 600, 245, 734, 500)
     ClearScreen()
 
 def IsPokemonFightOpen():
