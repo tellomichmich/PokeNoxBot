@@ -996,7 +996,8 @@ def ImgToString(img, CharSet=None):
     Command = "bin\\tesseract.exe --tessdata-dir bin\\tessdata tmp\\ocr.png tmp\\ocr "
     if CharSet != None:
         Command += "-c tessedit_char_whitelist="+CharSet+" "
-    Command += " --psm 7 > nul 2>&1"
+    Command += "-psm 7 "
+    Command += "> nul 2>&1"
     #print Command
     os.system(Command)
     #TODO: Remove this, as we psm 7
