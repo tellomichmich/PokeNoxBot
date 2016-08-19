@@ -204,7 +204,7 @@ def OnlyPureWhite(img1):
                
 #This is a best effort implementation !            
 def GetPokemonFightNameCP():
-    for i in range(1000):
+    for i in range(5):
         PokemonName = None
         PokemonCP = None
         img1 = GetScreen()
@@ -255,7 +255,7 @@ def GetPokemonFightNameCP():
                 PokemonCP = int(PokemonCP)
                 PokemonName = FindRealPokemonName(PokemonName)
                 
-                img1.save("tmp\\DEBUG_POKEFIGHT_%s_%d.png" % (PokemonName, PokemonCP))      
+                #img1.save("tmp\\DEBUG_POKEFIGHT_%s_%d.png" % (PokemonName, PokemonCP))      
                 return (PokemonName, PokemonCP)
             except:
                 pass
