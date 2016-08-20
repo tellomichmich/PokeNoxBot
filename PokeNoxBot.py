@@ -408,7 +408,7 @@ def PokemonWorker(PokemonPosition):
     bIsPokemonHitted = False
     ThrowCount = 0
     while True:
-        print "[!] %d "+SelectedPokeball+" left" % (PokeBallLeft)
+        print "[!] %d %s left" % (PokeBallLeft, SelectedPokeball)
         if PokeBallLeft == 0:
             if IsNoMorePokeBall() == True:
                 print "[!] No more pokeball... leaving fight !"
