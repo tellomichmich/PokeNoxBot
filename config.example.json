@@ -10,5 +10,6 @@
     "Speed" : 7,
     "IVLimit" : 0.7,
     "ProcessPokemon" : true,
-    "ProcessPokestop" : true
+    "ProcessPokestop" : true,
+    "CheckRadius" : 50
 }

@@ -202,7 +202,7 @@ class PokemonIVCalculator:
      },
      {
       "id": 29,
-      "name": "Nidoran♀",
+      "name": "NidoranF",
       "stamina": 110,
       "attack": 100,
       "defense": 104
@@ -223,7 +223,7 @@ class PokemonIVCalculator:
      },
      {
       "id": 32,
-      "name": "Nidoran♂",
+      "name": "NidoranM",
       "stamina": 92,
       "attack": 110,
       "defense": 94
@@ -853,7 +853,7 @@ class PokemonIVCalculator:
      },
      {
       "id": 122,
-      "name": "Mr_mime",
+      "name": "MrMime",
       "stamina": 80,
       "attack": 154,
       "defense": 196

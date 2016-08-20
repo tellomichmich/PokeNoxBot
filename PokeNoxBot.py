@@ -3,7 +3,6 @@
 import json
 import time
 import io
-
 import random
 import sys
 import os.path
@@ -11,184 +10,24 @@ import base64
 import datetime
 import PokemonIVCalculator
 import math
-
 import traceback
-
+from Utils import *
 from PIL import Image, ImageOps, ImageDraw, ImageChops, ImageFilter
-
 from math import ceil, radians, cos, sin, asin, sqrt
 import re
 
 assert sys.version_info >= (2,7)
 assert sys.version_info < (3,0)
 
+#TODO: Class !
 config = {}
 IVCalculator = PokemonIVCalculator.PokemonIVCalculator()
-
-#Rotate a python list
-def rotate_list(l,n):
-    return l[-n:] + l[:-n]
-
-def geo_distance(lat1, lon1, lat2, lon2):
-    lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
-
-    dlat = lat2 - lat1 
-    dlon = lon2 - lon1 
-    a = sin(dlon/2)**2 + cos(lon1) * cos(lon2) * sin(dlat/2)**2
-    c = 2 * asin(sqrt(a)) 
-    r = 6371 
-    return (c * r)*1000
-    
-def geo_walk_to(speed, lat1, lon1, alt1, lat2, lon2, alt2):
-    new_lat = lat1
-    new_lon = lon1
-    new_alt = alt1
-    
-    travel_geo_points = []
-    
-    dist = geo_distance(lat1, lon1, lat2, lon2)
-    steps = (float(dist))/(float(speed))
-    if steps >= 1:
-        dLat = (lat2 - lat1) / steps
-        dLon = (lon2 - lon1) / steps
-        dAlt = (alt2 - alt1) / steps
-        for i in range(0, int(steps)):
-            new_lat = lat1 + (dLat * (i+1))
-            new_lon = lon1 + (dLon * (i+1))
-            new_alt = alt1 + (dAlt * (i+1))
-            #print "%f, %f, %f" % (new_lat, new_lon, new_alt)
-            travel_geo_points.append([new_lat, new_lon, new_alt])
-    #else:
-        #print "%f, %f, %f" % (new_lat, new_lon, new_alt)
-    #    travel_geo_points.append([new_lat, new_lon, new_alt])
-    return travel_geo_points
-
-def geo_point_from_kml(kml_filename, speed):
-    geo_points = []
-    f = open(kml_filename)
-    for line in f:
-        if re.match("[-+]?[0-9]*\.?[0-9]+,[-+]?[0-9]*\.?[0-9]+,[-+]?[0-9]*\.?[0-9]+", line):
-            geo_point = line.strip().split(',')
-            geo_points.append([float(geo_point[0]), float(geo_point[1]), float(geo_point[2])])
-    f.close()
-
-    loop_geo_points = []
-
-    last_geo_point = None
-    for cur_geo_point in geo_points:
-        if not last_geo_point is None:
-            loop_geo_points = loop_geo_points + geo_walk_to(speed, last_geo_point[0], last_geo_point[1], last_geo_point[2], cur_geo_point[0], cur_geo_point[1], cur_geo_point[2])
-        last_geo_point = cur_geo_point
-    loop_geo_points = loop_geo_points + geo_walk_to(speed, last_geo_point[0], last_geo_point[1], last_geo_point[2], geo_points[0][0], geo_points[0][1], geo_points[0][2])
-    return loop_geo_points
-
-def Tap(x, y):
-    Command = "bin\\adb.exe shell input tap %d %d" % (x, y)
-    os.system(Command)
-
-def Swipe(x1, y1, x2, y2):
-    Command = "bin\\adb.exe shell input swipe %d %d %d %d " % (x1, y1, x2, y2)
-    os.system(Command)
-    
-def SwipeTime(x1, y1, x2, y2, t):
-    Command = "bin\\adb.exe shell input swipe %d %d %d %d %d" % (x1, y1, x2, y2, t)
-    os.system(Command)
-    
-def KeyEscap():
-    Command = "bin\\adb.exe shell input keyevent 4"
-    os.system(Command)
-
-def TakePngScreenshot():
-    while True:
-        try:
-            Command = "bin\\adb.exe shell \"screencap -p | busybox base64\""
-            PngScreenshotData = os.popen(Command).read()
-            PngScreenshotData = base64.b64decode(PngScreenshotData)
-            break;
-        except KeyboardInterrupt:
-            sys.exit(0)
-        except:
-            print "[!] Failed to get screen"
-    return PngScreenshotData
- 
-def IsColorInCeil(ColorToCheck, RefColor, Ceil):
-    if (RefColor[0]+(255*Ceil)) > ColorToCheck[0] > (RefColor[0]-(255*Ceil)):
-        if (RefColor[1]+(255*Ceil)) > ColorToCheck[1] > (RefColor[1]-(255*Ceil)):
-            if (RefColor[2]+(255*Ceil)) > ColorToCheck[2] > (RefColor[2]-(255*Ceil)):
-                return True
-    return False
-
-def RemoveColor(img, Color, Ceil):
-    pixdata = img.load()
-    for y in xrange(img.size[1]):
-        for x in xrange(img.size[0]):
-            if IsColorInCeil(pixdata[x, y], Color, Ceil):
-                pixdata[x, y] = (255, 255, 255)
-               
-def RemoveBlue(img, Limit):
-    pixdata = img.load()
-    for y in xrange(img.size[1]):
-        for x in xrange(img.size[0]):
-            if pixdata[x, y][2] > Limit:
-                pixdata[x, y] = (255, 255, 255)
-                        
-def RemoveInSquare(img, x, y, xs, ys):
-    pixdata = img.load()
-    for yr in xrange(img.size[1]):
-        for xr in xrange(img.size[0]):
-            if (x+xs >= xr >= x) and (y+ys >= yr >= y):
-                pixdata[xr, yr] = (255, 255, 255)
-                
-def RemoveNotInSquare(img, x, y, xs, ys):
-    pixdata = img.load()
-    for yr in xrange(img.size[1]):
-        for xr in xrange(img.size[0]):
-            if not((x+xs >= xr >= x) and (y+ys >= yr >= y)):
-                pixdata[xr, yr] = (255, 255, 255)
-                
-def GetMeanColor(img, x, y, size=10):
-    MeanColor = [0, 0, 0]
-    pixdata = img.load()
-    for xr in range(x-(size/2), x+(size/2)):
-        for yr in range(y-(size/2), y+(size/2)):
-            MeanColor[0] = MeanColor[0] + pixdata[xr, yr][0]
-            MeanColor[1] = MeanColor[1] + pixdata[xr, yr][1]
-            MeanColor[2] = MeanColor[2] + pixdata[xr, yr][2]
-    MeanColor[0] = MeanColor[0]/(size**2)
-    MeanColor[1] = MeanColor[1]/(size**2)
-    MeanColor[2] = MeanColor[2]/(size**2)
-    return MeanColor
-
-ScreenShotCount = 0
-def GetImgFromScreenShot():
-    global ScreenShotCount
-    ScreenShotCount += 1
-    Screenshot = TakePngScreenshot()
-    img = Image.open(io.BytesIO(Screenshot))
-    img = img.convert("RGB")
-    #img.save("tmp/%04d.png" % (ScreenShotCount))
-    return img
-    
-def HighContrast(img, Limit=126):
-    pixdata1 = img.load()
-    for xr in xrange(img.size[0]):
-        for yr in xrange(img.size[1]):
-            if pixdata1[xr, yr] >= Limit:
-                pixdata1[xr, yr] = 255
-            else:
-                pixdata1[xr, yr] = 0
-
-def OnlyPureWhite(img1):
-    pixdata1 = img1.load()
-    output = img1.copy()
-    pixdataout = output.load()
-    for xr in xrange(img1.size[0]):
-        for yr in xrange(img1.size[1]):
-            if pixdata1[xr, yr] != (255, 255, 255):
-                pixdataout[xr, yr] = (255, 255, 255)
-            else:
-                pixdataout[xr, yr] = (0, 0, 0)
-    return output
+#TODO: class !!!
+img = None
+#TODO: We really need class !!
+TotalExperience = 0
+#TODO: A CLASS IS REALLY NEEDED !
+TrainerLevel = -1
                
 #This is a best effort implementation !            
 def GetPokemonFightNameCP():
@@ -196,7 +35,7 @@ def GetPokemonFightNameCP():
         PokemonName = None
         PokemonCP = None
         img1 = GetScreen()
-        Frame = img1.crop(((50, 190, 50+350, 190+80)))
+        Frame = img1.crop(((65, 190, 65+320, 190+80)))
         Frame = ImageOps.posterize(Frame, 6)
         RemoveColor(Frame, (255, 255, 255), 0.20)
         Frame = OnlyPureWhite(Frame)
@@ -253,16 +92,6 @@ def GetPokemonFightNameCP():
         ClearScreen()
     return ("Unknown", 9999)
 
-def GetImgFromFile(File):               
-    img = Image.open(File)
-    img = img.convert("RGB")
-    return img
-    
-#TODO: class !!!
-img = None
-#TODO: We really need class !!
-TotalExperience = 0
-
 def AddExperience(ExperienceCount):
     global TotalExperience
     TotalExperience += ExperienceCount
@@ -281,17 +110,17 @@ def ClearScreen():
     global img
     img = None
     
-def IsOpenPokestop():
+def IsPokestopOpened():
     img = GetScreen()
     #Outer
     MeanColor = GetMeanColor(img, 234, 780)
     #print MeanColor
-    if MeanColor[0] < 150 and MeanColor[1] < 230 and MeanColor[2] > 240:
+    if MeanColor[0] < 150 and MeanColor[1] < 235 and MeanColor[2] > 240:
         return True
     #Inner border
     MeanColor = GetMeanColor(img, 180, 745)
     #print MeanColor
-    if MeanColor[0] < 150 and MeanColor[1] < 230 and MeanColor[2] > 240:
+    if MeanColor[0] < 150 and MeanColor[1] < 235 and MeanColor[2] > 240:
         return True
     return False
  
@@ -300,7 +129,7 @@ def SpinPokestop():
     time.sleep(0.5)
     ClearScreen()
     
-def IsSpinnedPokestop():
+def IsPokestopSpinned():
     img = GetScreen()
     #Outer
     MeanColor = GetMeanColor(img, 234, 780)
@@ -339,7 +168,7 @@ def FindPokestop():
     #Remove Lured pokestop circle
     Frame = img.crop(((x, y, x+xs, y+ys)))
     RemoveColor(Frame, (179, 250, 255), 0.05)
-    Frame.save("tmp\\OUT_POKESTOP.png")
+    #Frame.save("tmp\\OUT_POKESTOP.png")
     pixdata = Frame.load()
     SquareSize = 8
     for xr in range((SquareSize/2), xs-(SquareSize/2)):
@@ -353,28 +182,11 @@ def FindPokestop():
                     return [xr+(SquareSize/2)+x, yr+(SquareSize/2)+y]
     return None
     
-def BlackOrWhite(img):
-    BlackCount = 0.0
-    pixdata = img.load()
-    for xr in xrange(img.size[0]):
-        for yr in xrange(img.size[1]):
-            if pixdata[xr, yr] != (255, 255, 255):
-               pixdata[xr, yr] = (0, 0, 0)
-               BlackCount += 1
-    return (BlackCount/(img.size[0]*img.size[1]))*100
-    
 def IsDay():
     Hour = datetime.datetime.now().hour  
     if Hour >= 7 and Hour < 19:
         return True
     return False
-
-def RemoveColorList(img, ColorList):
-    pixdata = img.load()
-    for x in xrange(img.size[0]):
-        for y in xrange(img.size[1]):
-            if pixdata[x, y] in ColorList:
-                pixdata[x, y] = (255, 255, 255)
                 
 def FindPokemonPosition(img, SquareSize=4):
     pixdata = img.load()
@@ -458,11 +270,7 @@ def FindPokemon():
     ColorBlackList.append((0, 128, 0))
     
     RemoveColorList(Frame, ColorBlackList)
-    
-    Frame.save("tmp\\OUT_COLOR.png")
-    BlackRatio = BlackOrWhite(Frame)
-    Frame.save("tmp\\OUT_BW.png")
-    #Frame = Image.open("TEST_POKE.png")
+    BlackOrWhite(Frame)
     #Search for big Pokemon before small one
     for i in range(10, 2, -2):
         PokemonPosition = FindPokemonPosition(Frame, i)
@@ -477,8 +285,6 @@ def ThrowPokeball(Power):
     #Far 100
     #Near 400
     SwipeTime(236, 780, 236, Power, 200)
-    #Fast Pokeball return
-    #SwipeTime(73, 600, 245, 734, 500)
     ClearScreen()
 
 def IsPokemonFightOpen():
@@ -497,7 +303,6 @@ def IsGymOpen():
         return False
     return True
     
-    
 def IsOnMap():
     img = GetScreen()
     pixdata = img.load()
@@ -505,7 +310,6 @@ def IsOnMap():
     
 def IsCatchSucess():
     img = GetScreen()
-    #img = GetImgFromFile("CatchSuccess.png")
     pixdata = img.load()
     if IsColorInCeil(pixdata[44, 227], (254, 255, 254), 0.005) and IsColorInCeil(pixdata[22, 518], (247, 255, 245), 0.01):
         return True
@@ -516,7 +320,6 @@ def GetPokeballLeft():
     img = img.crop(((297, 755, 297+28, 755+19)))
     RemoveColor(img, (255, 255, 255), 0.1)
     img = OnlyPureWhite(img)
-    #print int(ImgToString(img, "0123456789"))
     return int(ImgToString(img, "0123456789"))
     
 def IsNoMorePokeBall():
@@ -546,18 +349,17 @@ def PokemonWorker(PokemonPosition):
             CloseGym()
             break
         #We maybe clicked on a PokeStop...
-        if IsOpenPokestop() == True:
+        if IsPokestopOpened() == True:
             print "[!] Holy... This is a Pokestop"
             PokestopWorker([0,0])
             break
-        if IsSpinnedPokestop() == True:
+        if IsPokestopSpinned() == True:
             print "[!] Holy... This is a Spinned Pokestop"
             ClosePokestop()
             break
         if IsPokeBoxFull() == True:
             print "[!] The PokeBox is full !"
             #Close the pop-up
-            #Tap(345, 419)
             KeyEscap()
             time.sleep(0.5)
             ClearScreen()
@@ -577,25 +379,26 @@ def PokemonWorker(PokemonPosition):
         ClosePokemonFight()
         return None
     
-    PokeBallLeft = GetPokeballLeft()
-    
     #Get the Name and the CP of this Pokemon
     (PokemonName, PokemonCP) = GetPokemonFightNameCP()
     print "[!] Seems to be a %s at %d" % (PokemonName, PokemonCP)
     
     #Select the right Poke Ball
     SelectedPokeball = "Poke Ball"
-    if PokemonCP >= config['UltraBallCPLimit'] and GetTrainerLevel() >= 12:
+    if PokemonCP >= config['UltraBallCPLimit'] and GetTrainerLevel() >= 20:
         print "[!] Using a Ultra Ball %d > %d" % (PokemonCP, config['UltraBallCPLimit'])
         if UseUltraBall() == False:
             if UseGreatBall() == True:
                 SelectedPokeball = "Great Ball" 
         else:
            SelectedPokeball = "Ultra Ball" 
-    elif PokemonCP >= config['GreatBallCPLimit'] and GetTrainerLevel() >= 20:
+    elif PokemonCP >= config['GreatBallCPLimit'] and GetTrainerLevel() >= 12:
         print "[!] Using a Great Ball %d > %d" % (PokemonCP, config['GreatBallCPLimit'])
         if UseGreatBall() == True:
-            SelectedPokeball = "Great Ball" 
+            SelectedPokeball = "Great Ball"
+            
+    #Do this after the pokeball selection
+    PokeBallLeft = GetPokeballLeft()
 
     #Use a Razz Berry if one
     if PokemonCP >= config['RazzBerryCPLimit'] and GetTrainerLevel() >= 8:
@@ -605,7 +408,7 @@ def PokemonWorker(PokemonPosition):
     bIsPokemonHitted = False
     ThrowCount = 0
     while True:
-        print "[!] %d Pokeball left" % (PokeBallLeft)
+        print "[!] %d "+SelectedPokeball+" left" % (PokeBallLeft)
         if PokeBallLeft == 0:
             if IsNoMorePokeBall() == True:
                 print "[!] No more pokeball... leaving fight !"
@@ -655,11 +458,6 @@ def PokemonWorker(PokemonPosition):
         if bIsOnMap == True:
             print "[!] Pokemon flee !"
             return False
-        
-        # if StressCount == 0:
-            # print "[!] No more pokeball !"
-            # ClosePokemonFight()
-            # return None
             
         if StressCount >= 4:
             bIsPokemonHitted = True
@@ -700,13 +498,11 @@ def PokemonWorker(PokemonPosition):
         ClosePokemon()
         
     AddExperience(100)
-    
     print "[!] Waiting return to map..."
     ReturnToMap()
     return True
 
 def ClosePokemon():
-    #Tap(239, 740)
     KeyEscap()
     time.sleep(0.3)
     ClearScreen()
@@ -725,10 +521,10 @@ def PokestopWorker(PokeStopPosition):
             print "[!] Pokestop is too far !"
             ClosePokestop()
             break
-        if IsOpenPokestop() == True:
+        if IsPokestopOpened() == True:
             bOpenPokestopSuccess = True
             break
-        if IsSpinnedPokestop() == True:
+        if IsPokestopSpinned() == True:
             print "[!] Pokestop already spinned... Something wrong..."
             ClosePokestop()
             break
@@ -744,10 +540,10 @@ def PokestopWorker(PokeStopPosition):
             
     if bOpenPokestopSuccess == True:
         SpinPokestop()
-        bIsSpinnedPokestop = False
+        bIsPokestopSpinned = False
         for i in range(3):
-            if IsSpinnedPokestop() == True:
-                bIsSpinnedPokestop = True
+            if IsPokestopSpinned() == True:
+                bIsPokestopSpinned = True
                 break
             print "[!] Wait for spinned pokestop"
             ClearScreen()
@@ -770,15 +566,12 @@ def PokestopWorker(PokeStopPosition):
             print "[!] The bag is full..."
             CleanInventory()
          
-        if bIsSpinnedPokestop == True:
+        if bIsPokestopSpinned == True:
             AddExperience(50)
 
-        bOpenPokestopSuccess = bIsSpinnedPokestop
+        bOpenPokestopSuccess = bIsPokestopSpinned
     return bOpenPokestopSuccess
 
-def random_lat_long_delta():
-    return ((random.random() * 0.00001) - 0.000005) * 3
-    
 def SetPosition(Position):
     Position[1] += random_lat_long_delta()
     Position[0] += random_lat_long_delta()
@@ -849,10 +642,10 @@ def TransferLowCPPokemons(Number):
         TransferPokemon()
     
     #Close Menu
-    #Tap(236, 736)
     CloseMenu()
     #Wait to be on the map
     time.sleep(1)
+    ClearScreen()
     
 def IsGameCrashed():
     img = GetScreen()
@@ -871,7 +664,6 @@ def IsPokeBoxFull():
     pixdata = img.load()
     return IsColorInCeil(pixdata[345, 419], (54, 206, 167), 0.005)
 
-#TODO: This shit is language dependent !
 def IsPokestopTooFar():
     img = GetScreen()
     pixdata = img.load()
@@ -885,13 +677,6 @@ def IsBagFull():
 def ClosePokemonFight():
     Tap(53, 65)
     ClearScreen()
-
-#Todo: Take a while...
-def ZoomOut():
-    Command = "bin\\adb.exe push bin\\Zoomout.txt /sdcard/Zoomout.txt"
-    os.system(Command)
-    Command = "bin\\adb.exe shell sh /sdcard/Zoomout.txt"
-    os.system(Command)
     
 def RestartApplication():
     #Close the game
@@ -900,11 +685,6 @@ def RestartApplication():
     #Start the game
     Command = "bin\\adb shell monkey -p com.nianticlabs.pokemongo -c android.intent.category.LAUNCHER 1"
     os.system(Command)
-    #Close the error popup
-    #Tap(240, 444)
-    #time.sleep(0.5)
-    #Start the game
-    #Tap(334, 291)
     while IsOnMap() == False:
         Tap(235, 457)
         ClearScreen()
@@ -943,7 +723,6 @@ def AddEggInIncubator():
     #ClosePokestop()
     KeyEscap()
     #Close Eggs Screen
-    #ClosePokestop()
     ClosePokemonMemu()
     KeyEscap()
     return True
@@ -981,10 +760,10 @@ def ReturnToMap():
         if IsPokestopTooFar():
             ClosePokestop()
             return True
-        if IsSpinnedPokestop():
+        if IsPokestopSpinned():
             ClosePokestop()
             return True
-        if IsOpenPokestop():
+        if IsPokestopOpened():
             PokestopWorker([0,0])
             #No need to close, this is close by PokestopWorker
             return True
@@ -1015,25 +794,6 @@ def ReturnToMap():
     img.save("OUT_FAIL.png")
     RestartApplication()
     return False
-   
-def ImgToString(img, CharSet=None):
-    img.save("tmp\\ocr.png")
-    Command = "bin\\tesseract.exe --tessdata-dir bin\\tessdata tmp\\ocr.png tmp\\ocr "
-    if CharSet != None:
-        Command += "-c tessedit_char_whitelist="+CharSet+" "
-    Command += "-psm 7 "
-    Command += "> nul 2>&1"
-    #print Command
-    os.system(Command)
-    #TODO: Remove this, as we psm 7
-    #Get the largest line in txt
-    with open("tmp\\ocr.txt") as f:
-        content = f.read().splitlines()
-    OutputLine = ""
-    for line in content:
-        if len(line) > len(OutputLine):
-            OutputLine = line
-    return OutputLine
 
 def GetPokemonName():
     img = GetScreen()
@@ -1080,7 +840,6 @@ def IsEggHatched():
     #print pixdata[18, 780]
     return IsColorInCeil(pixdata[18, 780], (204, 245, 237), 0.005)
     
-
 def FindRealItemName(ItemName):
     ItemNameList = [
                     "Potion",
@@ -1101,7 +860,7 @@ def FindRealItemName(ItemName):
     RealItemName = ""
     MinScore = 9999
     for i in ItemNameList:
-        CurrentScore = levenshtein_distance(ItemName, i)
+        CurrentScore = LevenshteinDistance(ItemName, i)
         if CurrentScore < MinScore:
             MinScore = CurrentScore
             RealItemName = i
@@ -1297,8 +1056,6 @@ def GetPokemonLevel():
             return estPokemonLevel
     return 0
 
-#TODO: A CLASS IS REALLY NEEDED !
-TrainerLevel = -1
 def GetTrainerLevel():
     global TrainerLevel
     return TrainerLevel
@@ -1323,8 +1080,6 @@ def UpdateTrainerLevel():
     except:
         pass
     return False
- 
-
     
 def GetPokemonHP():
     img = GetScreen()
@@ -1351,184 +1106,95 @@ def GetPokemonIV(PokemonName=None, PokemonCP=None):
     PokemonHP = GetPokemonHP()
     PokemonStarDust = GetPokemonStarDust()
     return IVCalculator.EvaluatePokemon(PokemonName, PokemonCP, PokemonHP, PokemonStarDust, True, PokemonLevel)
-
-def levenshtein_distance(first, second):
-    """Find the Levenshtein distance between two strings."""
-    if len(first) > len(second):
-        first, second = second, first
-    if len(second) == 0:
-        return len(first)
-    first_length = len(first) + 1
-    second_length = len(second) + 1
-    distance_matrix = [[0] * second_length for x in range(first_length)]
-    for i in range(first_length):
-       distance_matrix[i][0] = i
-    for j in range(second_length):
-       distance_matrix[0][j]=j
-    for i in xrange(1, first_length):
-        for j in range(1, second_length):
-            deletion = distance_matrix[i-1][j] + 1
-            insertion = distance_matrix[i][j-1] + 1
-            substitution = distance_matrix[i-1][j-1]
-            if first[i-1] != second[j-1]:
-                substitution += 1
-            distance_matrix[i][j] = min(insertion, deletion, substitution)
-    return distance_matrix[first_length-1][second_length-1]
     
 def FindRealPokemonName(PokemonName):
     MinScore = 9999
     RealPokemonName = None
     for pokemon in IVCalculator.PokemonInfoList:
-        CurrentScore = levenshtein_distance(PokemonName, pokemon['name'])
+        CurrentScore = LevenshteinDistance(PokemonName, pokemon['name'])
         if CurrentScore < MinScore:
             MinScore = CurrentScore
             RealPokemonName = pokemon['name']
     return RealPokemonName
-     
-#Core...
-
-#AddEggInIncubator()
-#Tap(272, 800)
-#Swipe(539, 200, 0, 200)
-#Tap(490, 128)
-#img = GetImgFromFile("output.png")
-#PokemonPosition = FindPokemon()
-#PokeStopPosition = FindPokestop(img)
-#img = GetImgFromScreenShot()
-#FindPokemon()
-#print GetMeanColor(img, 251, 478 )
-#print FindPokemon()
-#img.save("OUT.png")
-#print PokemonPosition
-#print IsCatchSucess()
-#CatchPokemon([376, 512])
-#CleanInventory()
-#print IsCatchSucess()
-#TransfertPokemon(30)
-#img = Image.open("output.png")
-#print IsBagFull()
-#print IsGymOpen()
-#print IsOpenPokestop()
-#print IsPokemonOpen()
-#print GetPokemonName()
-#print IsEvolvable()
-#print EvolvePokemon()
-#TransferLowCPPokemons(50)
-#print GetPokemonCP()
-#EvolveAllPokemon()
-#print GetPokemonFightNameCP()
-#PokemonLevel = GetPokemonLevel()
-#PokemonName = GetPokemonName()
-#PokemonCP = GetPokemonCP()
-#PokemonHP = GetPokemonHP()
-#PokemonStarDust = GetPokemonStarDust()
-#while True:
-#    UpdateTrainerLevel()
-#    print GetTrainerLevel()
-#    ClearScreen()
-#print IVCalculator.EvaluatePokemon(PokemonName, PokemonCP, PokemonHP, PokemonStarDust, True, PokemonLevel)
-# OpenPokemonMenu()
-# #Tap on Upper Left Pokemon
-# Tap(77, 239)
-# time.sleep(0.5)
-# ClearScreen()
-# while True:
-    # PokemonIV = GetPokemonIV()
-    # if PokemonIV == None:
-        # break
-    # print PokemonIV
-    # #Go to Next Pokemon
-    # Tap(460, 200)
-    # time.sleep(1)
-    # ClearScreen()
-#print FindRealPokemonName("Ridgc@çcotta")
-#UpdateTrainerLevel()
-#CleanAllPokemon()
-#SetTrainerLevel(21)
-#print GetPokemonIV()
-#print FindRealItemName("ORgjyri")
     
-#print IsNoMorePokeBall()
-#print GetPokeballLeft()
+#Core...
+if __name__ == '__main__':
+    #Load config file
+    with open('config.json', 'r') as f:
+        config = json.load(f)
 
-#Tap(317, 640)
-#SwipeTime(317, 700, 317, 257, 3000)
-#sys.exit(0)
+    #Load KML File and extrapol geo point
+    loop_geo_points = geo_point_from_kml(config['KMLFile'], config['Speed'])
 
-#Load config file
-with open('config.json', 'r') as f:
-    config = json.load(f)
+    #Searching for the nearest point 
+    if os.path.isfile("tmp/saved_position.txt"):
+        f = open("tmp/saved_position.txt", 'r')
+        line = f.read().strip()
+        if re.match(".*,.*,.*", line):
+            saved_position = line.split(',')
+            saved_position[0] = float(saved_position[0])
+            saved_position[1] = float(saved_position[1])
+            saved_position[2] = float(saved_position[2])
+            min_distance = 99999999
+            min_distance_index = 0
+            current_index = 0
+            for geo_point in loop_geo_points:
+                distance_to_saved_point = geo_distance(saved_position[0], saved_position[1], geo_point[1], geo_point[0])
+                if distance_to_saved_point < min_distance:
+                    min_distance_index = current_index
+                    min_distance = distance_to_saved_point
+                current_index += 1
+            loop_geo_points = rotate_list(loop_geo_points, (-1 * min_distance_index))
+            #Teleport Security
 
-loop_geo_points = geo_point_from_kml(config['KMLFile'], config['Speed'])
-
-#Searching for the nearest point 
-if os.path.isfile("tmp/saved_position.txt"):
-    f = open("tmp/saved_position.txt", 'r')
-    line = f.read().strip()
-    if re.match(".*,.*,.*", line):
-        saved_position = line.split(',')
-        saved_position[0] = float(saved_position[0])
-        saved_position[1] = float(saved_position[1])
-        saved_position[2] = float(saved_position[2])
-        min_distance = 99999999
-        min_distance_index = 0
-        current_index = 0
+    StepCount = 0
+    #Set Initial position
+    SetPosition(loop_geo_points[0])
+    StartTime = time.time()
+    while True:
         for geo_point in loop_geo_points:
-            distance_to_saved_point = geo_distance(saved_position[0], saved_position[1], geo_point[1], geo_point[0])
-            if distance_to_saved_point < min_distance:
-                min_distance_index = current_index
-                min_distance = distance_to_saved_point
-            current_index += 1
-        loop_geo_points = rotate_list(loop_geo_points, (-1 * min_distance_index))
-		#Teleport Security
-
-Count = 0
-#Set Initial position
-SetPosition(loop_geo_points[0])
-StartTime = time.time()
-while True:
-    for geo_point in loop_geo_points:
-        if Count%(50/config['Speed'])==0:
-            ReturnToMap()
-            UpdateTrainerLevel()
-            SetPosition(geo_point)
-            #Waiting for end of running...
-            time.sleep(4.5)
-            ClearScreen()
-            print "[!] Looking around..."
-            
-            #Pokestop first to grab some pokeball
-            while config['ProcessPokestop']:
-                print "[!] Looking for Pokestop"
-                PokeStopPosition = FindPokestop()
-                if PokeStopPosition is None:
-                    print "[!] No more Pokestop found."
-                    break
-                if PokestopWorker(PokeStopPosition) == False:
-                    print "[!] Something failed..."
-                    break
-            
-            while config['ProcessPokemon']:
-                print "[!] Looking for pokemon"
-                #Clearing the screen because PokestopWorker can be long...
+            #Check for Pokemon and Pokestop every 50 meters
+            if StepCount%(config['CheckRadius']/config['Speed'])==0:
+                ReturnToMap()
+                UpdateTrainerLevel()
+                SetPosition(geo_point)
+                #Waiting for end of running...
+                time.sleep(4.5)
                 ClearScreen()
-                PokemonPosition = FindPokemon()
-                if PokemonPosition == False:
-                    print "[!] This place is near a Gym !"
-                    break
-                if PokemonPosition is None:
-                    print "[!] No more Pokemon not found."
-                    break
-                PokemonWorkerReturn = PokemonWorker(PokemonPosition)
-                if PokemonWorkerReturn == None:
-                    print "[!] This place is near a Gym ?"
-                    break
-                if PokemonWorkerReturn == False:
-                    if IsGymOpen() == True:
-                        CloseGym()
+                print "[!] Looking around..."
+                
+                #Pokestop first to grab some pokeball
+                while config['ProcessPokestop']:
+                    print "[!] Looking for Pokestop"
+                    PokeStopPosition = FindPokestop()
+                    if PokeStopPosition is None:
+                        print "[!] No more Pokestop found."
+                        break
+                    if PokestopWorker(PokeStopPosition) == False:
+                        print "[!] Something failed..."
+                        break
+                
+                while config['ProcessPokemon']:
+                    print "[!] Looking for pokemon"
+                    #Clearing the screen because PokestopWorker can be long...
+                    ClearScreen()
+                    PokemonPosition = FindPokemon()
+                    if PokemonPosition == False:
                         print "[!] This place is near a Gym !"
                         break
-            #Print estimated exprience for kikoo-time !
-            print "[!] ~%d Exp/h" % ((GetExperience()/(time.time()-StartTime))*60*60)
-        Count += 1
-        #SetPosition(geo_point)
+                    if PokemonPosition is None:
+                        print "[!] No more Pokemon not found."
+                        break
+                    PokemonWorkerReturn = PokemonWorker(PokemonPosition)
+                    if PokemonWorkerReturn == None:
+                        print "[!] This place is near a Gym ?"
+                        break
+                    if PokemonWorkerReturn == False:
+                        if IsGymOpen() == True:
+                            CloseGym()
+                            print "[!] This place is near a Gym !"
+                            break
+                #Print estimated exprience for kikoo-time !
+                print "[!] ~%d Exp/h" % ((GetExperience()/(time.time()-StartTime))*60*60)
+            StepCount += 1
+            #SetPosition(geo_point)
