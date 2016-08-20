@@ -41,7 +41,6 @@ def GetPokemonFightNameCP():
         Frame = OnlyPureWhite(Frame)
         PokemonNameCP = ImgToString(Frame, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789♀♂?")
         PokemonNameCP = PokemonNameCP.split(' ')
-        print PokemonNameCP
         #New pokenom don't have the pokeball in front of name
         #['BLABLA', 'CP123'] 
         if len(PokemonNameCP) == 2:
@@ -69,7 +68,6 @@ def GetPokemonFightNameCP():
             if CPMark == "CP":
                 PokemonName = PokemonNameCP[1]
                 PokemonCP = PokemonNameCP[3]
-        #print "-> %s %s" % (PokemonName, PokemonCP)
         if PokemonCP != None and PokemonName != None:
             #Little correction
             PokemonCP = PokemonCP.replace('O', '0')
@@ -114,12 +112,10 @@ def IsPokestopOpened():
     img = GetScreen()
     #Outer
     MeanColor = GetMeanColor(img, 234, 780)
-    #print MeanColor
     if MeanColor[0] < 150 and MeanColor[1] < 235 and MeanColor[2] > 240:
         return True
     #Inner border
     MeanColor = GetMeanColor(img, 180, 745)
-    #print MeanColor
     if MeanColor[0] < 150 and MeanColor[1] < 235 and MeanColor[2] > 240:
         return True
     return False
@@ -137,7 +133,6 @@ def IsPokestopSpinned():
         return True
     #Inner border
     MeanColor = GetMeanColor(img, 180, 745)
-    #print MeanColor
     if MeanColor[0] > 150 and MeanColor[1] < 150 and MeanColor[2] > 200:
         return True
     return False
@@ -328,45 +323,44 @@ def IsNoMorePokeBall():
     return pixdata[283, 737] == (179, 251, 165)
     
 def PokemonWorker(PokemonPosition):
-    print "[!] Going to fight with %d %d !" % (PokemonPosition[0], PokemonPosition[1])
+    COOL_LOG("Going to fight with %d %d !" % (PokemonPosition[0], PokemonPosition[1]))
     Tap(PokemonPosition[0], PokemonPosition[1])
     ClearScreen()
     time.sleep(0.3)
     bIsPokemonFightOpened = False
     #Check if the click successed
     if IsOnMap() == True:
-        print "[!] Click failed !"
+        ERROR_LOG("Tap on Pokemon failed !")
         return None
     
     #Wait for fight
     for i in range(0, 5):
-        #time.sleep(1)
         if IsPokemonFightOpen() == True:
             bIsPokemonFightOpened = True
             break;
         if IsGymOpen() == True:
-            print "[!] Holy... This is a Gym"
+            ERROR_LOG("Holy... This is a Gym")
             CloseGym()
             break
         #We maybe clicked on a PokeStop...
         if IsPokestopOpened() == True:
-            print "[!] Holy... This is a Pokestop"
+            ERROR_LOG("Holy... This is a Pokestop")
             PokestopWorker([0,0])
             break
         if IsPokestopSpinned() == True:
-            print "[!] Holy... This is a Spinned Pokestop"
+            ERROR_LOG("Holy... This is a Spinned Pokestop")
             ClosePokestop()
             break
         if IsPokeBoxFull() == True:
-            print "[!] The PokeBox is full !"
+            WARNING_LOG("The PokeBox is full !")
             #Close the pop-up
             KeyEscap()
             time.sleep(0.5)
             ClearScreen()
-            TransferLowCPPokemons(10)
+            TransferLowCPPokemons(50)
             #Return true to refight the pokemon
             return True
-        print "[!] Wait for Pokemon fight..."
+        INFO_LOG("Wait for Pokemon fight...")
         time.sleep(0.5)
         ClearScreen()
     
@@ -375,25 +369,26 @@ def PokemonWorker(PokemonPosition):
         return None
         
     if IsNoMorePokeBall() == True:
-        print "[!] No more pokeball... leaving fight !"
+        WARNING_LOG("No more pokeball... leaving fight !")
         ClosePokemonFight()
+        #Return None to avoid pokemon fight
         return None
     
     #Get the Name and the CP of this Pokemon
     (PokemonName, PokemonCP) = GetPokemonFightNameCP()
-    print "[!] Seems to be a %s at %d" % (PokemonName, PokemonCP)
+    COOL_LOG("Seems to be a %s at %d" % (PokemonName, PokemonCP))
     
     #Select the right Poke Ball
     SelectedPokeball = "Poke Ball"
     if PokemonCP >= config['UltraBallCPLimit'] and GetTrainerLevel() >= 20:
-        print "[!] Using a Ultra Ball %d > %d" % (PokemonCP, config['UltraBallCPLimit'])
+        INFO_LOG("Using a Ultra Ball %d > %d" % (PokemonCP, config['UltraBallCPLimit']))
         if UseUltraBall() == False:
             if UseGreatBall() == True:
                 SelectedPokeball = "Great Ball" 
         else:
            SelectedPokeball = "Ultra Ball" 
     elif PokemonCP >= config['GreatBallCPLimit'] and GetTrainerLevel() >= 12:
-        print "[!] Using a Great Ball %d > %d" % (PokemonCP, config['GreatBallCPLimit'])
+        INFO_LOG("Using a Great Ball %d > %d" % (PokemonCP, config['GreatBallCPLimit']))
         if UseGreatBall() == True:
             SelectedPokeball = "Great Ball"
             
@@ -403,37 +398,41 @@ def PokemonWorker(PokemonPosition):
     #Use a Razz Berry if one
     if PokemonCP >= config['RazzBerryCPLimit'] and GetTrainerLevel() >= 8:
         if UseRazzBerry() == True:
-            print "[!] Using Razz Berry"
+            INFO_LOG("Using Razz Berry")
 
     bIsPokemonHitted = False
     ThrowCount = 0
     while True:
-        print "[!] %d %s left" % (PokeBallLeft, SelectedPokeball)
-        if PokeBallLeft == 0:
-            if IsNoMorePokeBall() == True:
-                print "[!] No more pokeball... leaving fight !"
-                ClosePokemonFight()
-                return None
-            
-            PokeBallLeft = GetPokeballLeft()
-        
-        if bIsPokemonHitted == False:
-            LastPower = random.randint(10,500)
-        else:
-            print "[!] Using last "+SelectedPokeball+" power"
+        #Check if we are still on fight before working
+        if IsPokemonFightOpen() == False:
+            ERROR_LOG("Mmmm, something really strange happened !")
+            return False
+        #Avoid too long pokemon fight, maybe the pokemon is far...
         if ThrowCount > 30 :
-            print "[!] Pokemon too hard, exiting the fight !"
+            ERROR_LOG("Pokemon too hard, exiting the fight !")
             ClosePokemonFight()
             #Return false to avoid refight this pokemon
             return False
+        #Check if pokeball are left
+        INFO_LOG("%d %s left" % (PokeBallLeft, SelectedPokeball))
+        if PokeBallLeft == 0:
+            if IsNoMorePokeBall() == True:
+                WARNING_LOG("No more pokeball... leaving fight !")
+                ClosePokemonFight()
+                return None
+            PokeBallLeft = GetPokeballLeft()
+        #Select the power of the pokeball
+        if bIsPokemonHitted == False:
+            LastPower = random.randint(10,500)
+        else:
+            INFO_LOG("Using last "+SelectedPokeball+" power")
         #TODO Detect pokemon distance
-        print "[!] Throwing a "+SelectedPokeball+" (%d)" % LastPower
+        INFO_LOG("Throwing a %s (%d)" % (SelectedPokeball, LastPower))
         ThrowPokeball(LastPower)
         ThrowCount += 1
         time.sleep(1)
         bIsPokemonFightOpened = False
         bIsCatchSuccess = False
-        bIsOnMap = False
         StressCount = 0
         for i in range(30):
             if IsPokemonFightOpen() == True:
@@ -443,21 +442,17 @@ def PokemonWorker(PokemonPosition):
                 bIsCatchSuccess = True
                 break
             if IsOnMap() == True:
-                bIsOnMap = True
-                break
+                WARNING_LOG("Pokemon flee !")
+                return False
             if IsGameCrashed() == True:
                 return None
-            print "[!] #STRESS..."
+            INFO_LOG("#STRESS...")
             StressCount += 1
             ClearScreen()
             
         if bIsCatchSuccess == True:
-            print "[!] Pokemon caught !"
+            COOL_LOG("Pokemon caught !")
             break
-            
-        if bIsOnMap == True:
-            print "[!] Pokemon flee !"
-            return False
             
         if StressCount >= 4:
             bIsPokemonHitted = True
@@ -477,16 +472,23 @@ def PokemonWorker(PokemonPosition):
         Tap(50,50)
         time.sleep(0.5)
         ClearScreen()
-    print "[!] Getting Pokemon information"
+    INFO_LOG("Getting Pokemon information")
     #Waiting Rewards to disappear
     time.sleep(2)
     ClearScreen()
     #We are here on the pokemon statistics
     PokemonName = GetPokemonName()
     PokemonCP = GetPokemonCP()
-    print "[!] This is a %s CP:%d" % (PokemonName, PokemonCP)
     PokemonIV = GetPokemonIV(PokemonName, PokemonCP)
-    print PokemonIV
+    
+    COOL_LOG("%s :" % (PokemonName))
+    COOL_LOG("CP  %d" % (PokemonCP))
+    if not PokemonIV is None:
+        COOL_LOG("DEF %d" % (PokemonIV['defenseIV']))
+        COOL_LOG("ATK %d" % (PokemonIV['attackIV']))
+        COOL_LOG("STA %d" % (PokemonIV['staminaIV']))
+        COOL_LOG("IV  %f" % (PokemonIV['perfection']))
+        
     if (not PokemonIV is None) and PokemonIV['perfection'] >= config['IVLimit']:
         ClosePokemon()
     elif PokemonName in config['EvolveList']:
@@ -498,7 +500,7 @@ def PokemonWorker(PokemonPosition):
         ClosePokemon()
         
     AddExperience(100)
-    print "[!] Waiting return to map..."
+    INFO_LOG("Waiting return to map...")
     ReturnToMap()
     return True
 
@@ -508,34 +510,34 @@ def ClosePokemon():
     ClearScreen()
     
 def PokestopWorker(PokeStopPosition):
-    print "[!] Working on Pokestop %d %d" % (PokeStopPosition[0], PokeStopPosition[1])
+    COOL_LOG("Working on Pokestop %d %d" % (PokeStopPosition[0], PokeStopPosition[1]))
     Tap(PokeStopPosition[0], PokeStopPosition[1])
     time.sleep(0.6)
     ClearScreen()
     if IsOnMap() == True:
-        print "[!] Click failed !"
+        ERROR_LOG("Tap on Pokestop failed !")
         return False
     bOpenPokestopSuccess = False
     for i in range(5):
         if IsPokestopTooFar() == True:
-            print "[!] Pokestop is too far !"
+            ERROR_LOG("Pokestop is too far !")
             ClosePokestop()
             break
         if IsPokestopOpened() == True:
             bOpenPokestopSuccess = True
             break
         if IsPokestopSpinned() == True:
-            print "[!] Pokestop already spinned... Something wrong..."
+            ERROR_LOG("Pokestop already spinned...")
             ClosePokestop()
             break
         if IsPokemonFightOpen():
-            print "[!] Holy... This is a pokemon !"
+            ERROR_LOG("Holy... This is a pokemon !")
             PokemonWorker([0,0])
             break
         if IsGymOpen():
-            print "[!] Holy... This is a Gym"
+            ERROR_LOG("Holy... This is a Gym")
             CloseGym()
-        print "[!] Wait for open pokestop"
+        INFO_LOG("Wait for open pokestop")
         ClearScreen()
             
     if bOpenPokestopSuccess == True:
@@ -545,7 +547,7 @@ def PokestopWorker(PokeStopPosition):
             if IsPokestopSpinned() == True:
                 bIsPokestopSpinned = True
                 break
-            print "[!] Wait for spinned pokestop"
+            INFO_LOG("Wait for spinned pokestop")
             ClearScreen()
         
         bIsBagFull = IsBagFull()
@@ -556,14 +558,14 @@ def PokestopWorker(PokeStopPosition):
             if IsOnMap() == True:
                 bIsOnMap = True
                 break
-            print "[!] Waiting return to the map"
+            INFO_LOG("Waiting return to the map")
             ClearScreen()
             
         if bIsOnMap == False:
             return False
 
         if bIsBagFull == True:
-            print "[!] The bag is full..."
+            WARNING_LOG("The bag is full...")
             CleanInventory()
          
         if bIsPokestopSpinned == True:
@@ -586,6 +588,7 @@ def SetPosition(Position):
 def TransferPokemon():
     if IsPokemonOpen() == False:
         return False
+    WARNING_LOG("Tranfering %s !" % GetPokemonName())
     #Options
     Tap(418, 741)
     time.sleep(0.1)
@@ -593,13 +596,12 @@ def TransferPokemon():
     Tap(423, 651)
     time.sleep(0.1)
     #Validation
-    #Tap(236,452) #0.31
     Tap(240, 500) #0.33
     time.sleep(1)
     
 def OpenPokemonMenu():
     if IsOnMap() == False:
-        print "[!] Not on the map !"
+        ERROR_LOG("Can't OpenPokemonMenu : Not on the map !")
         return False
     #Open Menu
     Tap(236, 736)
@@ -615,30 +617,25 @@ def CloseMenu():
     ClearScreen()
     
 def TransferLowCPPokemons(Number):
-    print "[!] Low CP pokemon will be transfered..."
+    WARNING_LOG("Low CP pokemon will be transfered...")
     if OpenPokemonMenu() == False:
-        print "[!] Failed to OpenPokemonMenu"
+        ERROR_LOG("Failed to OpenPokemonMenu")
         return False
     #Tap CP
     Tap(415, 742) 
     time.sleep(0.1)
     #Select CP
-    #Tap(414, 631)#0.310
     Tap(415, 650) #0.33.0
     time.sleep(0.1)
     #ScrollDown
     SwipeTime(461, 123, 461, 12000, 300)
     
     for i in range(0, Number):
-        print "[!] Transfering a low CP pokemon (%d/%d)" % (i+1, Number)
+        INFO_LOG("Transfering a low CP pokemon (%d/%d)" % (i+1, Number))
         #Tap Down Left pokemon
         Tap(83,619)
         time.sleep(0.5)
         ClearScreen()
-        if GetPokemonName() in EvolveList:
-            EvolvePokemon()
-        #    ClosePokemon()
-        #else:
         TransferPokemon()
     
     #Close Menu
@@ -679,6 +676,7 @@ def ClosePokemonFight():
     ClearScreen()
     
 def RestartApplication():
+    WARNING_LOG("Restarting the whole game !")
     #Close the game
     Command = "bin\\adb shell am force-stop com.nianticlabs.pokemongo"
     os.system(Command)
@@ -688,23 +686,23 @@ def RestartApplication():
     while IsOnMap() == False:
         Tap(235, 457)
         ClearScreen()
-        print "[!] Waiting for map..."
-        time.sleep(1)
+        INFO_LOG("Waiting for map...")
+        time.sleep(2)
     #Sometime got a "flash" map
     time.sleep(2)
     ClearScreen()
     while IsOnMap() == False:
         Tap(235, 457)
         ClearScreen()
-        print "[!] Waiting for map..."
-        time.sleep(1)
+        INFO_LOG("Waiting for map...")
+        time.sleep(2)
     ZoomOut()
     ClearScreen()
 
 #TODO: Handle multiple egg incubators
 def AddEggInIncubator():
     if OpenPokemonMenu() == False:
-        print "[!] Failed to OpenPokemonMenu"
+        ERROR_LOG("Failed to OpenPokemonMenu")
         return False
     time.sleep(0.5)
     #Tap on EGGS
@@ -742,11 +740,11 @@ def ReturnToMap():
             #No need to close
             return True
         if IsEggHatched() == True:
-            print "[!] EGG HATCHED !!!!!!!!!!"
+            COOL_LOG("EGG HATCHED !")
             #Tap anywhere on screen
             Tap(200, 440)
             ClearScreen()
-            print "[!] Waiting end of animation"
+            INFO_LOG("Waiting end of animation")
             while IsPokemonOpen() == False:
                 ClearScreen()
             AddExperience(500)
@@ -780,7 +778,7 @@ def ReturnToMap():
         time.sleep(0.5)
         #Last Hope... medals,...
         if i == 2:
-            print "[!] LAST HOPE TO ESCAPE !"
+            WARNING_LOG("LAST HOPE TO ESCAPE !")
             for j in range(4):
                 KeyEscap()
             Tap(0, 0)
@@ -789,9 +787,9 @@ def ReturnToMap():
             Tap(236, 536)
             time.sleep(1)
         ClearScreen()
-    print "[!] Don't know where we are.... Exiting"
+    ERROR_LOG("Don't know where we are.... Exiting")
     img = GetScreen()
-    img.save("OUT_FAIL.png")
+    img.save("tmp\\OUT_FAIL.png")
     RestartApplication()
     return False
 
@@ -814,10 +812,10 @@ def IsPokemonOpen():
     
 def EvolvePokemon():
     if IsPokemonOpen() == False:
-        print "[!] Not on a Pokemon !"
+        ERROR_LOG("Not on a Pokemon !")
         return False
     if IsEvolvable() == False:
-        print "[!] This Pokemon is not evolvable !"
+        WARNING_LOG("This Pokemon is not evolvable !")
         return False
     #Evolve !
     Tap(144, 707)
@@ -825,19 +823,18 @@ def EvolvePokemon():
     #Validation
     Tap(239, 420)
     ClearScreen()
-    print "[!] Waiting end of evolution..."
+    INFO_LOG("Waiting end of evolution...")
     time.sleep(10)
     while IsPokemonOpen() == False:
         ClearScreen()
         time.sleep(1)
     AddExperience(500)
-    print "[!] Evolution done !"
+    INFO_LOG("Evolution done !")
     return True
     
 def IsEggHatched():
     img = GetScreen()
     pixdata = img.load()
-    #print pixdata[18, 780]
     return IsColorInCeil(pixdata[18, 780], (204, 245, 237), 0.005)
     
 def FindRealItemName(ItemName):
@@ -867,9 +864,9 @@ def FindRealItemName(ItemName):
     return RealItemName
                  
 def CleanInventory():
-    print "[!] Clean inventory..."
+    WARNING_LOG("Clean inventory...")
     if IsOnMap() == False:
-        print "[!] Not on the map !"
+        ERROR_LOG("Not on the map !")
         return False
     Tap(236, 736)
     time.sleep(1)
@@ -891,7 +888,7 @@ def CleanInventory():
                 return False
             ItemName = FindRealItemName(ItemName)
             if ItemName in config['ItemToDropList']:
-                print "[!] Dropping %s " % (ItemName)
+                WARNING_LOG("Dropping %s " % (ItemName))
                 #Tap on trash
                 Tap(440, 140+(170*i))
                 time.sleep(1)
@@ -941,7 +938,6 @@ def GetPokemonCP():
         RemoveColor(Frame, (255, 255, 255), 0.2)
         BlackOrWhite(Frame)
         PokemonCP = ImgToString(Frame, "CP01234567890").upper()
-        #print PokemonCP
         if PokemonCP[:2] == "CP":
             try:  
                 return int(PokemonCP[2:])
@@ -958,21 +954,22 @@ def OpenBackPack():
     
 def UseRazzBerry():
     if IsPokemonFightOpen() == False:
-        print "[!] Impossible to use Razz Berry here !"
+        ERROR_LOG("Impossible to use Razz Berry here !")
         return False
     OpenBackPack()
     if UseItem("Razz Berry") == True:
         #Tap on Razz Berry to really use it
         Tap(237, 600)
         #Animation of Razz Berry
-        time.sleep(1.5)
+        time.sleep(2)
         ClearScreen()
         return True
+    ClearScreen()
     return False
     
 def UseGreatBall():
     if IsPokemonFightOpen() == False:
-        print "[!] Impossible to use Great Ball here !"
+        ERROR_LOG("Impossible to use Great Ball here !")
         return False
     OpenBackPack()
     if UseItem("Great Ball") == True:
@@ -984,7 +981,7 @@ def UseGreatBall():
 
 def UseUltraBall():
     if IsPokemonFightOpen() == False:
-        print "[!] Impossible to use Ultra Ball here !"
+        ERROR_LOG("Impossible to use Ultra Ball here !")
         return False
     OpenBackPack()
     if UseItem("Ultra Ball") == True:
@@ -1006,7 +1003,6 @@ def CleanAllPokemon():
     time.sleep(0.5)
     ClearScreen()
     for i in range(250):
-        #print GetPokemonCP()
         PokemonIV = GetPokemonIV()
         print PokemonIV
         if (not PokemonIV is None) and PokemonIV['perfection'] <= config['IVLimit']:
@@ -1161,40 +1157,40 @@ if __name__ == '__main__':
                 #Waiting for end of running...
                 time.sleep(4.5)
                 ClearScreen()
-                print "[!] Looking around..."
+                INFO_LOG("Looking around...")
                 
                 #Pokestop first to grab some pokeball
                 while config['ProcessPokestop']:
-                    print "[!] Looking for Pokestop"
+                    INFO_LOG("Looking for Pokestop")
                     PokeStopPosition = FindPokestop()
                     if PokeStopPosition is None:
-                        print "[!] No more Pokestop found."
+                        INFO_LOG("No more Pokestop found.")
                         break
                     if PokestopWorker(PokeStopPosition) == False:
-                        print "[!] Something failed..."
+                        ERROR_LOG("Something failed...")
                         break
                 
                 while config['ProcessPokemon']:
-                    print "[!] Looking for pokemon"
+                    INFO_LOG("Looking for pokemon")
                     #Clearing the screen because PokestopWorker can be long...
                     ClearScreen()
                     PokemonPosition = FindPokemon()
                     if PokemonPosition == False:
-                        print "[!] This place is near a Gym !"
+                        ERROR_LOG("This place is near a Gym !")
                         break
                     if PokemonPosition is None:
-                        print "[!] No more Pokemon not found."
+                        INFO_LOG("No more Pokemon not found.")
                         break
                     PokemonWorkerReturn = PokemonWorker(PokemonPosition)
                     if PokemonWorkerReturn == None:
-                        print "[!] This place is near a Gym ?"
+                        ERROR_LOG("This place is near a Gym ?")
                         break
                     if PokemonWorkerReturn == False:
                         if IsGymOpen() == True:
                             CloseGym()
-                            print "[!] This place is near a Gym !"
+                            ERROR_LOG("This place is near a Gym !")
                             break
-                #Print estimated exprience for kikoo-time !
-                print "[!] ~%d Exp/h" % ((GetExperience()/(time.time()-StartTime))*60*60)
+                #Display estimated exprience for kikoo-time !
+                INFO_LOG("~%d Exp/h" % ((GetExperience()/(time.time()-StartTime))*60*60))
             StepCount += 1
             #SetPosition(geo_point)

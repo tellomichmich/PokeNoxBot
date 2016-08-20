@@ -250,3 +250,15 @@ def LevenshteinDistance(first, second):
                 substitution += 1
             distance_matrix[i][j] = min(insertion, deletion, substitution)
     return distance_matrix[first_length-1][second_length-1]
+    
+def ERROR_LOG(String):
+    print("\033[0;91m"+"[#] "+String+"\033[00m")
+   
+def WARNING_LOG(String):
+    print("\033[0;93m"+"[!] "+String+"\033[00m")
+    
+def COOL_LOG(String):
+    print("\033[0;92m"+"[*] "+String+"\033[00m")
+    
+def INFO_LOG(String):
+    print("[+] "+String)
