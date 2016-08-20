@@ -755,9 +755,16 @@ def PokestopWorker(PokeStopPosition):
         bIsBagFull = IsBagFull()
         
         ClosePokestop()
-        while IsOnMap() == False:
+        bIsOnMap = False
+        for i in range(10):
+            if IsOnMap() == True:
+                bIsOnMap = True
+                break
             print "[!] Waiting return to the map"
             ClearScreen()
+            
+        if bIsOnMap == False:
+            return False
 
         if bIsBagFull == True:
             print "[!] The bag is full..."
@@ -1153,16 +1160,19 @@ def UseItem(ItemToUseName):
     for i in range(3, -1, -1):
         ItemNameZone = (152, 140+(170*i), 152+272, 140+(170*i)+39)
         Frame = img.crop(((ItemNameZone)))
-        #TODO: use user-patterns
         ItemName = ImgToString(Frame, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
-        if ItemName == "":
+        if len(ItemName) < 4 or len(ItemName) > 30:
             break
         ItemName = FindRealItemName(ItemName)
-        if ItemName in ItemToUseName:
+        print "%s %s" % (ItemName, ItemToUseName)
+        if ItemName == ItemToUseName:
             Tap(152, 140+(170*i))
+            time.sleep(0.5)
+            ClearScreen()
             return True
     #Same position as Pokestop
     CloseBackPack()
+    time.sleep(0.5)
     return False
 
 def GetPokemonCP():
@@ -1441,14 +1451,14 @@ def FindRealPokemonName(PokemonName):
     
 #print IsNoMorePokeBall()
 #print GetPokeballLeft()
+
+#Tap(317, 640)
+#SwipeTime(317, 700, 317, 257, 3000)
 #sys.exit(0)
 
 #Load config file
 with open('config.json', 'r') as f:
     config = json.load(f)
-    
-print config
-#sys.exit(0)
 
 loop_geo_points = geo_point_from_kml("Levalois.kml", config['Speed'])
 
