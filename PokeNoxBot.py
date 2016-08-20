@@ -198,7 +198,7 @@ def GetPokemonFightNameCP():
         img1 = GetScreen()
         Frame = img1.crop(((50, 190, 50+350, 190+80)))
         Frame = ImageOps.posterize(Frame, 6)
-        RemoveColor(Frame, (255, 255, 255), 0.25)
+        RemoveColor(Frame, (255, 255, 255), 0.20)
         Frame = OnlyPureWhite(Frame)
         PokemonNameCP = ImgToString(Frame, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789♀♂?")
         PokemonNameCP = PokemonNameCP.split(' ')
@@ -1157,14 +1157,13 @@ def CloseBackPack():
     
 def UseItem(ItemToUseName):
     img = GetScreen()
-    for i in range(3, -1, -1):
+    for i in range(4):
         ItemNameZone = (152, 140+(170*i), 152+272, 140+(170*i)+39)
         Frame = img.crop(((ItemNameZone)))
         ItemName = ImgToString(Frame, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
         if len(ItemName) < 4 or len(ItemName) > 30:
             break
         ItemName = FindRealItemName(ItemName)
-        print "%s %s" % (ItemName, ItemToUseName)
         if ItemName == ItemToUseName:
             Tap(152, 140+(170*i))
             time.sleep(0.5)
@@ -1460,7 +1459,7 @@ def FindRealPokemonName(PokemonName):
 with open('config.json', 'r') as f:
     config = json.load(f)
 
-loop_geo_points = geo_point_from_kml("Levalois.kml", config['Speed'])
+loop_geo_points = geo_point_from_kml(config['KMLFile'], config['Speed'])
 
 #Searching for the nearest point 
 if os.path.isfile("tmp/saved_position.txt"):

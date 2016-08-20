@@ -1,4 +1,5 @@
 {
+    "KMLFile" : "Levallois.kml",
     "ItemToDropList" : ["Potion", "Super Potion", "Hyper Potion", "Revive", "Poke Ball", "Razz Berry"],
     "EvolveList" : ["Pidgey", "Rattata", "Weedle", "Caterpie"],
     "KeepList" : ["Magikarp"],
