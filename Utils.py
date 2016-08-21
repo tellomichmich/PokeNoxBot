@@ -259,6 +259,9 @@ def WARNING_LOG(String):
     
 def COOL_LOG(String):
     print("\033[0;92m"+"[*] "+String+"\033[00m")
+ 
+def DEBUG_LOG(String):
+    print("\033[0;94m"+"[@] "+String+"\033[00m")
     
 def INFO_LOG(String):
     print("[+] "+String)

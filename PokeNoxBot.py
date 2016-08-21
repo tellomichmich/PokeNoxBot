@@ -326,6 +326,7 @@ def GetPokeballLeft():
 def IsNoMorePokeBall():
     img = GetScreen()
     pixdata = img.load()
+    DEBUG_LOG("IsNoMorePokeBall (%d,%d,%d)" % pixdata[283, 737])
     return pixdata[283, 737] == (179, 251, 165)
     
 def PokemonWorker(PokemonPosition):
@@ -427,6 +428,10 @@ def PokemonWorker(PokemonPosition):
                 ClosePokemonFight()
                 return None
             PokeBallLeft = GetPokeballLeft()
+            if PokeBallLeft == 0:
+                ERROR_LOG("No more pokeball... leaving fight !")
+                ClosePokemonFight()
+                return None
         #Select the power of the pokeball
         if bIsPokemonHitted == False:
             LastPower = random.randint(10,500)
@@ -441,7 +446,7 @@ def PokemonWorker(PokemonPosition):
         bIsCatchSuccess = False
         StressStartTime = time.time()
         while True:
-            #Only wait 20 sec max !
+            #Only wait 20 sec max ! (13sec is the max seen)
             if time.time()-StressStartTime > 20:
                 break
             if IsPokemonFightOpen() == True:
@@ -458,9 +463,9 @@ def PokemonWorker(PokemonPosition):
             INFO_LOG("#STRESS...")
             ClearScreen()
         StressDelay = (time.time()-StressStartTime)
-            
+        DEBUG_LOG("StressDelay %d" % (StressDelay))
         if bIsCatchSuccess == True:
-            COOL_LOG("Pokemon caught !")
+            COOL_LOG("Pokemon caught!")
             break
             
         if StressDelay >= 3:
@@ -835,12 +840,15 @@ def EvolvePokemon():
     ClearScreen()
     INFO_LOG("Waiting end of evolution...")
     time.sleep(10)
-    while IsPokemonOpen() == False:
+    EvolutionStart = time.time()
+    while time.time() - EvolutionStart < 60:
+        if IsPokemonOpen() == True:
+            AddExperience(500)
+            INFO_LOG("Evolution done !")
+            return True
         ClearScreen()
-        time.sleep(1)
-    AddExperience(500)
-    INFO_LOG("Evolution done !")
-    return True
+    ERROR_LOG("Application crashed ?")
+    return False
     
 def IsEggHatched():
     img = GetScreen()
