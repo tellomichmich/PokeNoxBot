@@ -315,7 +315,13 @@ def GetPokeballLeft():
     img = img.crop(((297, 755, 297+28, 755+19)))
     RemoveColor(img, (255, 255, 255), 0.1)
     img = OnlyPureWhite(img)
-    return int(ImgToString(img, "0123456789"))
+    PokeBallLeft = 0
+    try:
+        PokeBallLeft = int(ImgToString(img, "0123456789"))
+    except:
+        pass
+        
+    return PokeBallLeft
     
 def IsNoMorePokeBall():
     img = GetScreen()
@@ -532,8 +538,9 @@ def PokestopWorker(PokeStopPosition):
             break
         if IsPokemonFightOpen():
             ERROR_LOG("Holy... This is a pokemon !")
-            PokemonWorker([0,0])
-            break
+            #return True, the pokemon will not be here again, and we can search for the same pokestop
+            #return False, the pokemon is here again and we skip the search of pokemon
+            return PokemonWorker([0,0])
         if IsGymOpen():
             ERROR_LOG("Holy... This is a Gym")
             CloseGym()
