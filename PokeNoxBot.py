@@ -439,8 +439,11 @@ def PokemonWorker(PokemonPosition):
         time.sleep(1)
         bIsPokemonFightOpened = False
         bIsCatchSuccess = False
-        StressCount = 0
-        for i in range(30):
+        StressStartTime = time.time()
+        while True:
+            #Only wait 20 sec max !
+            if time.time()-StressStartTime > 20:
+                break
             if IsPokemonFightOpen() == True:
                 bIsPokemonFightOpened = True
                 break
@@ -453,14 +456,14 @@ def PokemonWorker(PokemonPosition):
             if IsGameCrashed() == True:
                 return None
             INFO_LOG("#STRESS...")
-            StressCount += 1
             ClearScreen()
+        StressDelay = (time.time()-StressStartTime)
             
         if bIsCatchSuccess == True:
             COOL_LOG("Pokemon caught !")
             break
             
-        if StressCount >= 4:
+        if StressDelay >= 3:
             bIsPokemonHitted = True
         else:
             bIsPokemonHitted = False
