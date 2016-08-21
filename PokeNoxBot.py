@@ -327,7 +327,7 @@ def IsNoMorePokeBall():
     img = GetScreen()
     pixdata = img.load()
     DEBUG_LOG("IsNoMorePokeBall (%d,%d,%d)" % pixdata[283, 737])
-    return pixdata[283, 737] == (179, 251, 165)
+    return IsColorInCeil(pixdata[283, 737],  (179, 251, 165), 0.01)
     
 def PokemonWorker(PokemonPosition):
     COOL_LOG("Going to fight with %d %d !" % (PokemonPosition[0], PokemonPosition[1]))
