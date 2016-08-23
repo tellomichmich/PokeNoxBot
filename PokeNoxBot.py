@@ -898,7 +898,6 @@ def CleanInventory():
         for i in range(3, -1, -1):
             ItemNameZone = (152, 140+(170*i), 152+272, 140+(170*i)+39)
             Frame = img.crop(((ItemNameZone)))
-            #TODO: use user-patterns
             ItemName = ImgToString(Frame,"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzé")
             if len(ItemName) < 4 or len(ItemName) > 20:
                 #Close Inventory
@@ -907,18 +906,39 @@ def CleanInventory():
                 return False
             ItemName = FindRealItemName(ItemName)
             if ItemName in config['ItemToDropList']:
-                WARNING_LOG("Dropping %s " % (ItemName))
-                #Tap on trash
-                Tap(440, 140+(170*i))
-                time.sleep(1)
-                #1sec for 20 elements
-                SwipeTime(351, 355, 351, 355, 4000)
-                #Tap OK
-                Tap(236, 511)
-                time.sleep(0.5)
-                bIsDroppedItem = True
+                ItemCountZone = (53, 230+(170*i), 98, 250+(170*i))
+                Frame = img.crop(((ItemCountZone)))
+                RemoveColor(Frame, (68, 105, 108), 0.1)
+                RemoveColor(Frame, (136, 162, 159), 0.1)
+                Frame = OnlyPureWhite(Frame)
+                ItemCount = ImgToString(Frame, "0123456789")
+                try:
+                    ItemCount = int(ItemCount)
+                except:
+                    ItemCount = 100
+                bIsItemToDrop = True
+                #TODO: In Configuration file !
+                if ItemName == "Great Ball":
+                    if ItemCount < 100:
+                        INFO_LOG("No enough Great Ball to drop !")
+                        bIsItemToDrop = False
+                    else:
+                        #Keep 100 Great Ball
+                        ItemCount = 100 - ItemCount
+                if bIsItemToDrop == True:
+                    WARNING_LOG("Dropping %d of %s" % (ItemCount, ItemName))
+                    #Tap on trash
+                    Tap(440, 140+(170*i))
+                    time.sleep(0.2)
+                    #1sec for 19 elements
+                    SwipeTime(351, 355, 351, 355, (1000/19)*ItemCount)
+                    #Tap OK
+                    Tap(236, 511)
+                    time.sleep(0.5)
+                    bIsDroppedItem = True
         if bIsDroppedItem == False:
             SwipeTime(399, 790, 399, 799-(116*4), 1000)
+            #Wait end of swipe
             time.sleep(2)
         ClearScreen()
     #Close Inventory
@@ -1149,8 +1169,8 @@ def WaitEndCommunication(Timeout):
 if __name__ == '__main__':
     #Load config file
     with open('config.json', 'r') as f:
-        config = json.load(f)
-
+        config = json.load(f)   
+        
     #Load KML File and extrapol geo point
     loop_geo_points = geo_point_from_kml(config['KMLFile'], config['Speed'])
 
