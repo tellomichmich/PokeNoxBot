@@ -361,9 +361,10 @@ def PokemonWorker(PokemonPosition):
         if IsPokeBoxFull() == True:
             WARNING_LOG("The PokeBox is full !")
             #Close the pop-up
-            KeyEscap()
-            time.sleep(0.5)
+            Tap(345, 419)
             ClearScreen()
+            time.sleep(0.5)
+            TransferLowCPPokemons(50)
             TransferLowCPPokemons(50)
             #Return true to refight the pokemon
             return True
