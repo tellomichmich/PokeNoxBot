@@ -496,12 +496,12 @@ def PokemonWorker(PokemonPosition):
     PokemonIV = GetPokemonIV(PokemonName, PokemonCP)
     
     COOL_LOG("%s :" % (PokemonName))
-    COOL_LOG("CP  %d" % (PokemonCP))
+    COOL_LOG("\tCP  %d" % (PokemonCP))
     if not PokemonIV is None:
-        COOL_LOG("DEF %d" % (PokemonIV['defenseIV']))
-        COOL_LOG("ATK %d" % (PokemonIV['attackIV']))
-        COOL_LOG("STA %d" % (PokemonIV['staminaIV']))
-        COOL_LOG("IV  %f" % (PokemonIV['perfection']))
+        COOL_LOG("\tDEF %d" % (PokemonIV['defenseIV']))
+        COOL_LOG("\tATK %d" % (PokemonIV['attackIV']))
+        COOL_LOG("\tSTA %d" % (PokemonIV['staminaIV']))
+        COOL_LOG("\tIV  %.2f" % (PokemonIV['perfection']))
         
     if (not PokemonIV is None) and PokemonIV['perfection'] >= config['IVLimit']:
         ClosePokemon()
@@ -1131,6 +1131,19 @@ def FindRealPokemonName(PokemonName):
             RealPokemonName = pokemon['name']
     return RealPokemonName
     
+def IsCommunicating():
+    img = GetScreen()
+    pixdata = img.load()
+    return IsColorInCeil(pixdata[41,106], (254, 254, 254), 0.01)
+    
+def WaitEndCommunication(Timeout):
+    WaitStart = time.time()
+    while time.time()-WaitStart < Timeout:
+        if IsCommunicating() == False:
+            return True
+        ClearScreen()
+    return False
+    
 #Core...
 if __name__ == '__main__':
     #Load config file
@@ -1170,6 +1183,8 @@ if __name__ == '__main__':
             #Check for Pokemon and Pokestop every 50 meters
             if StepCount%(config['CheckRadius']/config['Speed'])==0:
                 ReturnToMap()
+                if WaitEndCommunication(5) == False:
+                    RestartApplication()
                 UpdateTrainerLevel()
                 SetPosition(geo_point)
                 #Waiting for end of running...
@@ -1194,14 +1209,12 @@ if __name__ == '__main__':
                     ClearScreen()
                     PokemonPosition = FindPokemon()
                     if PokemonPosition == False:
-                        ERROR_LOG("This place is near a Gym !")
                         break
                     if PokemonPosition is None:
                         INFO_LOG("No more Pokemon not found.")
                         break
                     PokemonWorkerReturn = PokemonWorker(PokemonPosition)
                     if PokemonWorkerReturn == None:
-                        ERROR_LOG("This place is near a Gym ?")
                         break
                     if PokemonWorkerReturn == False:
                         if IsGymOpen() == True:
