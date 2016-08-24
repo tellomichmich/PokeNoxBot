@@ -279,7 +279,7 @@ def FindPokemon():
 def ThrowPokeball(Power):
     #Far 100
     #Near 400
-    SwipeTime(236, 780, 236, Power, 200)
+    SwipeTime(236, 780, 236+random.randint(-20, 20), Power, 200)
     ClearScreen()
 
 def IsPokemonFightOpen():
