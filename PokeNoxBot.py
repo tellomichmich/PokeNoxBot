@@ -365,7 +365,6 @@ def PokemonWorker(PokemonPosition):
             ClearScreen()
             time.sleep(0.5)
             TransferLowCPPokemons(50)
-            TransferLowCPPokemons(50)
             #Return true to refight the pokemon
             return True
         INFO_LOG("Wait for Pokemon fight...")
