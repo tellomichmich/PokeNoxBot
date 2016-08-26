@@ -25,7 +25,7 @@ Know bugs:
 * Incense can't be used with this bot
 
 Discord:
-* https://discord.gg/xPm5V
+* https://discord.gg/434cCwQ
 
 Video by PassiveModding:
 * https://www.youtube.com/watch?v=A1TovlD-D7c
