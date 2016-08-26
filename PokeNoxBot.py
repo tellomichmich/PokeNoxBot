@@ -1163,9 +1163,21 @@ def WaitEndCommunication(Timeout):
             return True
         ClearScreen()
     return False
-    
+
+def CheckTesseract():
+    img = GetImgFromFile("bin\\CheckTesseract.png")
+    if ImgToString(img,"PokeNoxBot") == "PokeNoxBot":
+        return True
+
+    return False
+ 
 #Core...
 if __name__ == '__main__':
+    #Check Tesseract installation
+    if CheckTesseract() == False:
+        ERROR_LOG("Make sure Tesseract is correctly installed !")
+        sys.exit(0)
+        
     #Load config file
     with open('config.json', 'r') as f:
         config = json.load(f)   
