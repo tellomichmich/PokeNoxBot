@@ -699,6 +699,9 @@ def RestartApplication():
     Command = "bin\\adb shell monkey -p com.nianticlabs.pokemongo -c android.intent.category.LAUNCHER 1"
     os.system(Command)
     while IsOnMap() == False:
+        #Tap on Retry
+        Tap(230, 407)
+        #Close Information popup
         Tap(235, 457)
         ClearScreen()
         INFO_LOG("Waiting for map...")
@@ -707,6 +710,7 @@ def RestartApplication():
     time.sleep(2)
     ClearScreen()
     while IsOnMap() == False:
+        #Close Information popup
         Tap(235, 457)
         ClearScreen()
         INFO_LOG("Waiting for map...")
