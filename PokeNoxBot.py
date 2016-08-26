@@ -927,7 +927,7 @@ def CleanInventory():
                         bIsItemToDrop = False
                     else:
                         #Keep 100 Great Ball
-                        ItemCount = 100 - ItemCount
+                        ItemCount = ItemCount - 100
                 if bIsItemToDrop == True:
                     WARNING_LOG("Dropping %d of %s" % (ItemCount, ItemName))
                     #Tap on trash
