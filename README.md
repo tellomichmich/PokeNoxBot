@@ -36,5 +36,8 @@ Video & Tuto by MasterWin:
 
 Video & Tuto by Clan Clash Of Kings (In Turkish)
 * https://www.youtube.com/watch?v=SPzUBphO5GI
+
+Thanks to:
+* Bolo30 (for reviews)
 </pre>
 
