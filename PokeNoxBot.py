@@ -1150,7 +1150,7 @@ def CleanInventory():
                     return False
 
                 ItemName = FindRealItemName(ItemName)
-                if not (ItemName is None) and ItemName in config['ItemToDropList']:
+                if not (ItemName is None) and ItemName in config['ItemToDropCountList'].keys():
                     ItemCountZone = (53, y+83, 98, y+83+30)
                     Frame = img.crop(((ItemCountZone)))
                     RemoveColor(Frame, (68, 105, 108), 0.05)
@@ -1162,22 +1162,21 @@ def CleanInventory():
                     except:
                         ItemCount = 100
                     bIsItemToDrop = True
-                    #TODO: In Configuration file !
-                    if ItemName == "Great Ball":
-                        if ItemCount < 100:
-                            INFO_LOG("No enough Great Ball to drop !")
-                            bIsItemToDrop = False
-                        else:
-                            #Keep 100 Great Ball
-                            ItemCount = ItemCount - 100
+                    #Adjust with configuration file
+                    if ItemCount < config['ItemToDropCountList'][ItemName]:
+                        INFO_LOG("No enough %s to drop !" % ItemName)
+                        bIsItemToDrop = False
+                    else:
+                        ItemCount = ItemCount - config['ItemToDropCountList'][ItemName]
+
                     if bIsItemToDrop == True:
                         WARNING_LOG("Dropping %d of %s" % (ItemCount, ItemName))
                         #Tap on trash
                         Tap(440, y)
                         time.sleep(0.2)
                         #66ms per count
-                        InitialValue = 120
-                        SwipeTime(351, 355, 351, 355, (66*ItemCount)+InitialValue)
+                        InitialValue = 300
+                        SwipeTime(351, 355, 351, 355, (50*ItemCount)+InitialValue)
                         #Tap OK
                         Tap(236, 511)
                         time.sleep(0.5)
@@ -1216,7 +1215,7 @@ if __name__ == '__main__':
     #Load config file
     with open('config.json', 'r') as f:
         config = json.load(f)
-    
+
     #Load KML File and extrapol geo point
     loop_geo_points = geo_point_from_kml(config['KMLFile'], config['Speed'])
 
@@ -1255,7 +1254,7 @@ if __name__ == '__main__':
                 UpdateTrainerLevel()
                 SetPosition(geo_point)
                 #Waiting for end of running...
-                time.sleep(4.5)
+                time.sleep(4)
                 ClearScreen()
                 INFO_LOG("Looking around...")
                 

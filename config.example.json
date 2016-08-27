@@ -1,15 +1,23 @@
 {
-    "KMLFile" : "Levallois.kml",
-    "ItemToDropList" : ["Potion", "Super Potion", "Hyper Potion", "Revive", "Poke Ball", "Razz Berry"],
+    "KMLFile" : "Paris_Tour.kml",
+    "ItemToDropCountList" : {
+                            "Potion" : 0,
+                            "Super Potion" : 0,
+                            "Hyper Potion" :  0,
+                            "Revive" : 0,
+                            "Poke Ball" : 0,
+                            "Razz Berry" : 0,
+                            "Great Ball" : 100
+                        },
     "EvolveList" : ["Pidgey", "Rattata", "Weedle", "Caterpie"],
-    "KeepList" : ["Magikarp"],
+    "KeepList" : [],
     "TransferCPLimit" : 500,
     "GreatBallCPLimit" : 600,
     "UltraBallCPLimit" : 700,
-    "RazzBerryCPLimit" : 400,
+    "RazzBerryCPLimit" : 200,
     "Speed" : 7,
     "IVLimit" : 0.7,
     "ProcessPokemon" : true,
     "ProcessPokestop" : true,
-    "CheckRadius" : 50
+    "CheckRadius" : 70
 }
