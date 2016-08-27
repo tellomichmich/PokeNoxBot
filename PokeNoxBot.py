@@ -883,71 +883,10 @@ def FindRealItemName(ItemName):
         if CurrentScore < MinScore:
             MinScore = CurrentScore
             RealItemName = i
+    #Security
+    if MinScore > 3:
+        return None
     return RealItemName
-                 
-def CleanInventory():
-    WARNING_LOG("Clean inventory...")
-    if IsOnMap() == False:
-        ERROR_LOG("Not on the map !")
-        return False
-    Tap(236, 736)
-    time.sleep(1)
-    Tap(372, 651)
-    time.sleep(1)
-    ClearScreen()
-    while True:
-        bIsDroppedItem = False
-        img = GetScreen()
-        for i in range(3, -1, -1):
-            ItemNameZone = (152, 140+(170*i), 152+272, 140+(170*i)+39)
-            Frame = img.crop(((ItemNameZone)))
-            ItemName = ImgToString(Frame,"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzé")
-            if len(ItemName) < 4 or len(ItemName) > 20:
-                #Close Inventory
-                Tap(236, 736)
-                ClearScreen()
-                return False
-            ItemName = FindRealItemName(ItemName)
-            if ItemName in config['ItemToDropList']:
-                ItemCountZone = (53, 230+(170*i), 98, 250+(170*i))
-                Frame = img.crop(((ItemCountZone)))
-                RemoveColor(Frame, (68, 105, 108), 0.1)
-                RemoveColor(Frame, (136, 162, 159), 0.1)
-                Frame = OnlyPureWhite(Frame)
-                ItemCount = ImgToString(Frame, "0123456789")
-                try:
-                    ItemCount = int(ItemCount)
-                except:
-                    ItemCount = 100
-                bIsItemToDrop = True
-                #TODO: In Configuration file !
-                if ItemName == "Great Ball":
-                    if ItemCount < 100:
-                        INFO_LOG("No enough Great Ball to drop !")
-                        bIsItemToDrop = False
-                    else:
-                        #Keep 100 Great Ball
-                        ItemCount = ItemCount - 100
-                if bIsItemToDrop == True:
-                    WARNING_LOG("Dropping %d of %s" % (ItemCount, ItemName))
-                    #Tap on trash
-                    Tap(440, 140+(170*i))
-                    time.sleep(0.2)
-                    #1sec for 19 elements
-                    SwipeTime(351, 355, 351, 355, (1000/19)*ItemCount)
-                    #Tap OK
-                    Tap(236, 511)
-                    time.sleep(0.5)
-                    bIsDroppedItem = True
-        if bIsDroppedItem == False:
-            SwipeTime(399, 790, 399, 799-(116*4), 1000)
-            #Wait end of swipe
-            time.sleep(2)
-        ClearScreen()
-    #Close Inventory
-    KeyEscap()
-    ClearScreen()
-    return False
  
 def CloseBackPack():
     KeyEscap()
@@ -962,7 +901,7 @@ def UseItem(ItemToUseName):
         if len(ItemName) < 4 or len(ItemName) > 30:
             break
         ItemName = FindRealItemName(ItemName)
-        if ItemName == ItemToUseName:
+        if not (ItemName is None) and ItemName == ItemToUseName:
             Tap(152, 140+(170*i))
             time.sleep(0.5)
             ClearScreen()
@@ -1174,9 +1113,93 @@ def CheckTesseract():
         return True
 
     return False
+
+def CleanInventory():
+    WARNING_LOG("Cleaning inventory...")
+    if IsOnMap() == False:
+        ERROR_LOG("Not on the map !")
+        return False
+    Tap(236, 736)
+    time.sleep(1)
+    Tap(372, 651)
+    time.sleep(1)
+    ClearScreen()
+    #TODO: Detect end of object
+    for i in range(0, 5):
+        img = GetScreen()
+        pixdata = img.load()
+        bIsDroppedItem = False
+        LastObjectY = None
+        #Search for Object
+        y = 700
+        while y > 134:
+            if IsColorInCeil(pixdata[448, y], (245, 255, 243), 0.1) == False:
+                #Allign to Object Y
+                y = y-7
+                ItemNameZone = (152, y, 152+272, y+40)
+                Frame = img.crop(((ItemNameZone)))
+                ItemName = ImgToString(Frame,"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzé")
+                if len(ItemName) < 4 or len(ItemName) > 20:
+                    #Close Inventory
+                    Tap(236, 736)
+                    ClearScreen()
+                    return False
+
+                ItemName = FindRealItemName(ItemName)
+                if not (ItemName is None) and ItemName in config['ItemToDropList']:
+                    ItemCountZone = (53, y+83, 98, y+83+30)
+                    Frame = img.crop(((ItemCountZone)))
+                    RemoveColor(Frame, (68, 105, 108), 0.05)
+                    RemoveColor(Frame, (136, 162, 159), 0.05)
+                    Frame = OnlyPureWhite(Frame)
+                    ItemCount = ImgToString(Frame, "0123456789")
+                    try:
+                        ItemCount = int(ItemCount)
+                    except:
+                        ItemCount = 100
+                    bIsItemToDrop = True
+                    #TODO: In Configuration file !
+                    if ItemName == "Great Ball":
+                        if ItemCount < 100:
+                            INFO_LOG("No enough Great Ball to drop !")
+                            bIsItemToDrop = False
+                        else:
+                            #Keep 100 Great Ball
+                            ItemCount = ItemCount - 100
+                    if bIsItemToDrop == True:
+                        WARNING_LOG("Dropping %d of %s" % (ItemCount, ItemName))
+                        #Tap on trash
+                        Tap(440, y)
+                        time.sleep(0.2)
+                        #66ms per count
+                        InitialValue = 70
+                        SwipeTime(351, 355, 351, 355, (66*ItemCount)+InitialValue)
+                        #Tap OK
+                        Tap(236, 511)
+                        time.sleep(0.5)
+                        bIsDroppedItem = True
+                #Goto to Next Object
+                y -= 100
+            #Scan
+            y-=1
+
+
+        if bIsDroppedItem == False:
+            #sys.exit(0)
+            SwipeTime(399, 790, 399, 799-(116*3), 1000)
+            #Wait end of swipe
+            time.sleep(2)
+        ClearScreen()
+
+    #Close Inventory
+    KeyEscap()
+    ClearScreen()
+    return False
+
  
 #Core...
 if __name__ == '__main__':
+
     #Check Tesseract installation
     if CheckTesseract() == False:
         ERROR_LOG("Make sure Tesseract is correctly installed !")
@@ -1184,8 +1207,8 @@ if __name__ == '__main__':
         
     #Load config file
     with open('config.json', 'r') as f:
-        config = json.load(f)   
-        
+        config = json.load(f) 
+
     #Load KML File and extrapol geo point
     loop_geo_points = geo_point_from_kml(config['KMLFile'], config['Speed'])
 
