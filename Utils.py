@@ -265,3 +265,19 @@ def DEBUG_LOG(String):
     
 def INFO_LOG(String):
     print("[+] "+String)
+
+def WriteAppend(Filename, Content):
+    f = open(Filename, "a")
+    f.write(Content)
+    f.close()
+
+def DiffImgPercent(img1, img2):
+    pixdata1 = img1.load()
+    pixdata2 = img2.load()
+    DiffCount = 0
+    for xr in xrange(img1.size[0]):
+        for yr in xrange(img1.size[1]):
+            if pixdata1[xr, yr] != pixdata2[xr, yr]:
+            	DiffCount += 1
+
+    return (DiffCount*1.0) / (img1.size[0]*img1.size[1])

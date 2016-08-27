@@ -28,6 +28,8 @@ img = None
 TotalExperience = 0
 #TODO: A CLASS IS REALLY NEEDED !
 TrainerLevel = -1
+#TODO: A CLASS !! CLASSS !!
+BotPosition = (0, 0, 0)
                
 #This is a best effort implementation !            
 def GetPokemonFightNameCP():
@@ -590,6 +592,8 @@ def PokestopWorker(PokeStopPosition):
     return bOpenPokestopSuccess
 
 def SetPosition(Position):
+    global BotPosition
+    BotPosition = Position
     Position[1] += random_lat_long_delta()
     Position[0] += random_lat_long_delta()
     Command = "bin\\adb.exe shell \"setprop persist.nox.gps.longitude %f && setprop persist.nox.gps.latitude %f && setprop persist.nox.gps.altitude %f\"" % (Position[0], Position[1], Position[2])
@@ -1125,7 +1129,7 @@ def CleanInventory():
     time.sleep(1)
     ClearScreen()
     #TODO: Detect end of object
-    for i in range(0, 5):
+    while True:
         img = GetScreen()
         pixdata = img.load()
         bIsDroppedItem = False
@@ -1172,7 +1176,7 @@ def CleanInventory():
                         Tap(440, y)
                         time.sleep(0.2)
                         #66ms per count
-                        InitialValue = 70
+                        InitialValue = 120
                         SwipeTime(351, 355, 351, 355, (66*ItemCount)+InitialValue)
                         #Tap OK
                         Tap(236, 511)
@@ -1185,10 +1189,14 @@ def CleanInventory():
 
 
         if bIsDroppedItem == False:
-            #sys.exit(0)
+            imgBefore = GetScreen()
             SwipeTime(399, 790, 399, 799-(116*3), 1000)
             #Wait end of swipe
             time.sleep(2)
+            ClearScreen()
+            imgAfter = GetScreen()
+            if DiffImgPercent(imgBefore, imgAfter) < 0.01:
+                break
         ClearScreen()
 
     #Close Inventory
@@ -1207,8 +1215,8 @@ if __name__ == '__main__':
         
     #Load config file
     with open('config.json', 'r') as f:
-        config = json.load(f) 
-
+        config = json.load(f)
+    
     #Load KML File and extrapol geo point
     loop_geo_points = geo_point_from_kml(config['KMLFile'], config['Speed'])
 
