@@ -8,6 +8,7 @@ import base64
 import datetime
 import PokemonIVCalculator
 import math
+import fileinput
 import traceback
 from PIL import Image, ImageOps, ImageDraw, ImageChops, ImageFilter
 from math import ceil, radians, cos, sin, asin, sqrt
@@ -223,11 +224,47 @@ def ImgToString(img, CharSet=None):
     
 #Todo: Take a while...
 def ZoomOut():
+    ZoomOutFix()
     Command = "bin\\adb.exe push bin\\Zoomout.txt /sdcard/Zoomout.txt"
     os.system(Command)
     Command = "bin\\adb.exe shell sh /sdcard/Zoomout.txt"
     os.system(Command)
-    
+
+#Check the correct input
+def GetEvent():
+    Command = "bin\\adb.exe shell cat /proc/bus/input/devices >tmp\\inputs.log"
+    os.system(Command)
+    a = 'N: Name="Android Input"'
+    line_num = 0
+    x = 0
+    with open("tmp\\inputs.log") as f:
+        content = f.read().splitlines()
+        for line in content:
+            line_num += 1
+            if a in line:
+                x = line_num+2
+            elif line_num == x:
+                result = line.replace(line[:32], '')
+                result = result.replace("input", "event")
+                return result
+
+#Change the file whit the correct event number
+def ZoomOutFix():
+    x = GetEvent()
+    array = []
+    array.append("#!/bin/sh")
+    with open("bin\\Zoomout.txt") as f:
+        content = f.read().splitlines()
+        for line in content:
+            if "event" in line:
+                line = re.sub(r"event[0-9]", x, line)
+                array.append(line)
+    f.close()
+    array.append("exit")
+    g = open("bin\\Zoomout.txt", 'w')
+    g.write("\n".join(array))
+    g.close()
+
 def LevenshteinDistance(first, second):
     """Find the Levenshtein distance between two strings."""
     if len(first) > len(second):
