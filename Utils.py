@@ -242,10 +242,9 @@ def GetEvent():
         for line in content:
             line_num += 1
             if a in line:
-                x = line_num+2
+                x = line_num+4
             elif line_num == x:
-                result = line.replace(line[:32], '')
-                result = result.replace("input", "event")
+                result = line.replace(line[:36], '')
                 return result
 
 #Change the file whit the correct event number
