@@ -13,6 +13,8 @@ import traceback
 from PIL import Image, ImageOps, ImageDraw, ImageChops, ImageFilter
 from math import ceil, radians, cos, sin, asin, sqrt
 import re
+import win32ui
+import subprocess
 
 #Rotate a python list
 def rotate_list(l,n):
@@ -242,10 +244,9 @@ def GetEvent():
         for line in content:
             line_num += 1
             if a in line:
-                x = line_num+2
+                x = line_num+4
             elif line_num == x:
-                result = line.replace(line[:32], '')
-                result = result.replace("input", "event")
+                result = line.replace(line[:36], '')
                 return result
 
 #Change the file whit the correct event number
@@ -264,6 +265,21 @@ def ZoomOutFix():
     g = open("bin\\Zoomout.txt", 'w')
     g.write("\n".join(array))
     g.close()
+
+#Check Nox process is running
+def IsNoxRunning():
+    try:
+        if win32ui.FindWindow(None, "Nox App Player"):
+            return True
+    except:
+        return False
+
+def StartNoxProcess(NoxPath):
+    try:
+        WARNING_LOG("Starting Nox...")
+        process = subprocess.Popen(NoxPath, shell=True, stdout=subprocess.PIPE)
+    except: 
+        ERROR_LOG("The program can't run Nox")
 
 def LevenshteinDistance(first, second):
     """Find the Levenshtein distance between two strings."""
