@@ -282,7 +282,7 @@ def FindPokemon():
 def ThrowPokeball(Power):
     #Far 100
     #Near 400
-    SwipeTime(236, 780, 236+random.randint(-20, 20), Power, 200)
+    SwipeTime(236, 780, 236+random.randint(-10, 10), Power, 150)
     ClearScreen()
 
 def IsPokemonFightOpen():
@@ -525,9 +525,19 @@ def ClosePokemon():
     KeyEscap()
     time.sleep(0.3)
     ClearScreen()
+
+def PokestopWorkerHardCode(PokeStopPosition):
+    Tap(PokeStopPosition[0], PokeStopPosition[1])
+    #time.sleep(0.2)
+    SpinPokestop()
+    #time.sleep(0.2)
+    ClosePokestop()
+    return True
     
 def PokestopWorker(PokeStopPosition):
     COOL_LOG("Working on Pokestop %d %d" % (PokeStopPosition[0], PokeStopPosition[1]))
+    if "HardCoreMode" in config and config["HardCoreMode"] == True:
+        return PokestopWorkerHardCode(PokeStopPosition)
     Tap(PokeStopPosition[0], PokeStopPosition[1])
     time.sleep(0.6)
     ClearScreen()
