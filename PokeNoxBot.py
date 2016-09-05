@@ -3,6 +3,7 @@
 import json
 import time
 import io
+import os
 import random
 import sys
 import os.path
@@ -702,6 +703,7 @@ def RestartApplication():
     #Start the game
     Command = "bin\\adb shell monkey -p com.nianticlabs.pokemongo -c android.intent.category.LAUNCHER 1"
     os.system(Command)
+    timeout = 0
     while IsOnMap() == False:
         #Tap on Retry
         Tap(230, 407)
@@ -710,6 +712,9 @@ def RestartApplication():
         ClearScreen()
         INFO_LOG("Waiting for map...")
         time.sleep(2)
+        timeout =+1
+        if timeout == 30:
+            RestartNox()
     #Sometime got a "flash" map
     time.sleep(2)
     ClearScreen()
@@ -1245,49 +1250,60 @@ if __name__ == '__main__':
     SetPosition(loop_geo_points[0])
     StartTime = time.time()
     while True:
-        for geo_point in loop_geo_points:
-            #Check for Pokemon and Pokestop every 50 meters
-            if StepCount%(config['CheckRadius']/config['Speed'])==0:
-                ReturnToMap()
-                if WaitEndCommunication(5) == False:
-                    RestartApplication()
-                UpdateTrainerLevel()
-                SetPosition(geo_point)
-                #Waiting for end of running...
-                time.sleep(4)
-                ClearScreen()
-                INFO_LOG("Looking around...")
-                
-                #Pokestop first to grab some pokeball
-                while config['ProcessPokestop']:
-                    INFO_LOG("Looking for Pokestop")
-                    PokeStopPosition = FindPokestop()
-                    if PokeStopPosition is None:
-                        INFO_LOG("No more Pokestop found.")
-                        break
-                    if PokestopWorker(PokeStopPosition) == False:
-                        ERROR_LOG("Something failed...")
-                        break
-                
-                while config['ProcessPokemon']:
-                    INFO_LOG("Looking for pokemon")
-                    #Clearing the screen because PokestopWorker can be long...
+        try:
+            for geo_point in loop_geo_points:
+                #Check for Pokemon and Pokestop every 50 meters
+                if StepCount%(config['CheckRadius']/config['Speed'])==0:
+                    ReturnToMap()
+                    if WaitEndCommunication(5) == False:
+                        RestartApplication()
+                    UpdateTrainerLevel()
+                    SetPosition(geo_point)
+                    #Waiting for end of running...
+                    time.sleep(4)
                     ClearScreen()
-                    PokemonPosition = FindPokemon()
-                    if PokemonPosition == False:
-                        break
-                    if PokemonPosition is None:
-                        INFO_LOG("No more Pokemon not found.")
-                        break
-                    PokemonWorkerReturn = PokemonWorker(PokemonPosition)
-                    if PokemonWorkerReturn == None:
-                        break
-                    if PokemonWorkerReturn == False:
-                        if IsGymOpen() == True:
-                            CloseGym()
-                            ERROR_LOG("This place is near a Gym !")
+                    INFO_LOG("Looking around...")
+                    
+                    #Pokestop first to grab some pokeball
+                    while config['ProcessPokestop']:
+                        INFO_LOG("Looking for Pokestop")
+                        PokeStopPosition = FindPokestop()
+                        if PokeStopPosition is None:
+                            INFO_LOG("No more Pokestop found.")
                             break
-                #Display estimated exprience for kikoo-time !
-                INFO_LOG("~%d Exp/h" % ((GetExperience()/(time.time()-StartTime))*60*60))
-            StepCount += 1
-            #SetPosition(geo_point)
+                        if PokestopWorker(PokeStopPosition) == False:
+                            ERROR_LOG("Something failed...")
+                            break
+                    
+                    while config['ProcessPokemon']:
+                        INFO_LOG("Looking for pokemon")
+                        #Clearing the screen because PokestopWorker can be long...
+                        ClearScreen()
+                        PokemonPosition = FindPokemon()
+                        if PokemonPosition == False:
+                            break
+                        if PokemonPosition is None:
+                            INFO_LOG("No more Pokemon not found.")
+                            break
+                        PokemonWorkerReturn = PokemonWorker(PokemonPosition)
+                        if PokemonWorkerReturn == None:
+                            break
+                        if PokemonWorkerReturn == False:
+                            if IsGymOpen() == True:
+                                CloseGym()
+                                ERROR_LOG("This place is near a Gym !")
+                                break
+                    #Display estimated exprience for kikoo-time !
+                    INFO_LOG("~%d Exp/h" % ((GetExperience()/(time.time()-StartTime))*60*60))
+                StepCount += 1
+                #SetPosition(geo_point)
+        except IOError as err:
+            if not IsNoxRunning():
+                ERROR_LOG("The program can't detect nox , trying to start...")
+                StartNoxProcess(config['NoxPath'])
+            else:
+                ERROR_LOG("Waiting for nox...")
+            time.sleep(4)
+            continue
+        except:
+            continue
