@@ -1300,7 +1300,7 @@ if __name__ == '__main__':
         except IOError as err:
             if not IsNoxRunning():
                 ERROR_LOG("The program can't detect nox , trying to start...")
-                StartNoxProcess()
+                StartNoxProcess(config['NoxPath'])
             else:
                 ERROR_LOG("Waiting for nox...")
             time.sleep(4)
