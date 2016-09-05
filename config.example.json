@@ -11,6 +11,7 @@
                         },
     "EvolveList" : ["Pidgey", "Rattata", "Weedle", "Caterpie"],
     "KeepList" : [],
+    "NoxPath" : "%APPDATA%\\Nox\\bin\\Nox.exe",
     "TransferCPLimit" : 500,
     "GreatBallCPLimit" : 600,
     "UltraBallCPLimit" : 700,
