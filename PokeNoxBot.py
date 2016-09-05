@@ -713,8 +713,9 @@ def RestartApplication():
         INFO_LOG("Waiting for map...")
         time.sleep(2)
         timeout =+1
-        if timeout == 30:
-            RestartNox()
+        if timeout == 60:
+            timeout = 0
+            KillNoxProcess()
     #Sometime got a "flash" map
     time.sleep(2)
     ClearScreen()
