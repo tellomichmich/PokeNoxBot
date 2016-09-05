@@ -1,7 +1,9 @@
 <pre>
 How to use ?
 
-* Install Python 2.7 and Pillow 3.3.0 (https://pypi.python.org/pypi/Pillow/3.3.0)
+* Install Python 2.7 (https://www.python.org/downloads/)
+* Install Pillow 3.3.0 (https://pypi.python.org/pypi/Pillow/3.3.0)
+* Install pypiwin32 (https://pypi.python.org/pypi/pypiwin32)
 * Copy C:\Users\USER_NAME\AppData\Roaming\Nox\bin\nox_adb.exe as adb.exe into bin PokeNoxBot directory
 * Copy C:\Users\USER_NAME\AppData\Roaming\Nox\bin\AdbWinApi.dll into bin PokeNoxBot directory
 * Install http://3.onj.me/tesseract/ into bin PokeNoxBot directory
