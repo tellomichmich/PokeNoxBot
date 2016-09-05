@@ -274,13 +274,19 @@ def IsNoxRunning():
     except:
         return False
 
-
 def StartNoxProcess(NoxPath):
     try:
         WARNING_LOG("Starting Nox...")
         process = subprocess.Popen(NoxPath, shell=True, stdout=subprocess.PIPE)
     except: 
         ERROR_LOG("The program can't run Nox")
+
+def KillNoxProcess():
+    try:
+        if IsNoxRunning():
+            os.system("taskkill /im Nox.exe /f")
+    except: 
+        ERROR_LOG("The program could not be killed")
 
 def LevenshteinDistance(first, second):
     """Find the Levenshtein distance between two strings."""
