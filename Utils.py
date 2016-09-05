@@ -274,10 +274,11 @@ def IsNoxRunning():
     except:
         return False
 
-def StartNoxProcess():
+
+def StartNoxProcess(NoxPath):
     try:
         WARNING_LOG("Starting Nox...")
-        process = subprocess.Popen("%APPDATA%\\Nox\\bin\\Nox.exe", shell=True, stdout=subprocess.PIPE)
+        process = subprocess.Popen(NoxPath, shell=True, stdout=subprocess.PIPE)
     except: 
         ERROR_LOG("The program can't run Nox")
 
