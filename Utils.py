@@ -288,6 +288,27 @@ def KillNoxProcess():
     except: 
         ERROR_LOG("The program could not be killed")
 
+#The process is closed if it has reached the maximum number of consecutive errors
+TimeOutValue = 0
+TimeOutValueMax = 20
+def CallTimeOut():
+    if TimeOutValue == TimeOutValueMax:
+        KillNoxProcess()
+        TimeOutValue = 0
+    else:
+        TimeOutValue += 1
+        ERROR_LOG("TimeOutValue: "+str(TimeOutValue)+" of "+str(TimeOutValueMax))
+
+#Reset the value if consecutive errors no longer occur
+def ResetTimeOut():
+    TimeOutValue = 0
+
+def GetTimeOutValue():
+    return TimeOutValue
+
+def GetTimeOutValueMax():
+    return TimeOutValueMax
+
 def LevenshteinDistance(first, second):
     """Find the Levenshtein distance between two strings."""
     if len(first) > len(second):
