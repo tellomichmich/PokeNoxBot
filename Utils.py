@@ -292,11 +292,12 @@ def KillNoxProcess():
 TimeOutValue = 0
 TimeOutValueMax = 20
 def CallTimeOut():
-    if BugTimeOutValue == TimeOutValueMax:
+    if TimeOutValue == TimeOutValueMax:
         KillNoxProcess()
         TimeOutValue = 0
     else:
         TimeOutValue += 1
+        ERROR_LOG("TimeOutValue: "+str(TimeOutValue)+" of "+str(TimeOutValueMax))
 
 #Reset the value if consecutive errors no longer occur
 def ResetTimeOut():
