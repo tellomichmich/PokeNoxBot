@@ -418,8 +418,8 @@ def PokemonWorker(PokemonPosition):
             ERROR_LOG("Mmmm, something really strange happened !")
             return False
         #Avoid too long pokemon fight, maybe the pokemon is far...
-        if ThrowCount > 30 :
-            ERROR_LOG("Pokemon too hard, exiting the fight !")
+        if ThrowCount == config['MaxPokeballsPerPokemon']:
+            WARNING_LOG("This pokemon has exceeded the "+str(config['MaxPokeballsPerPokemon'])+" attempts to be captured, exiting the fight...")
             ClosePokemonFight()
             #Return false to avoid refight this pokemon
             return False
@@ -444,6 +444,7 @@ def PokemonWorker(PokemonPosition):
         INFO_LOG("Throwing a %s (%d)" % (SelectedPokeball, LastPower))
         ThrowPokeball(LastPower)
         ThrowCount += 1
+        INFO_LOG("Attempt to catch "+str(ThrowCount)+" of "+str(config['MaxPokeballsPerPokemon']))
         time.sleep(1)
         bIsPokemonFightOpened = False
         bIsCatchSuccess = False
