@@ -341,16 +341,12 @@ def PokemonWorker(PokemonPosition):
     #Check if the click successed
     if IsOnMap() == True:
         ERROR_LOG("Tap on Pokemon failed !")
-        #Call the restart TimeOut
-        CallTimeOut()
         return None
     
     #Wait for fight
     for i in range(0, 5):
         if IsPokemonFightOpen() == True:
             bIsPokemonFightOpened = True
-            #Reset the restart TimeOut
-            ResetTimeOut()
             break;
         if IsGymOpen() == True:
             ERROR_LOG("Holy... This is a Gym")
@@ -548,8 +544,6 @@ def PokestopWorker(PokeStopPosition):
     ClearScreen()
     if IsOnMap() == True:
         ERROR_LOG("Tap on Pokestop failed !")
-        #Call the restart TimeOut
-        CallTimeOut()
         return False
     bOpenPokestopSuccess = False
     for i in range(5):
@@ -559,8 +553,6 @@ def PokestopWorker(PokeStopPosition):
             break
         if IsPokestopOpened() == True:
             bOpenPokestopSuccess = True
-            #Reset the restart TimeOut
-            ResetTimeOut()
             break
         if IsPokestopSpinned() == True:
             ERROR_LOG("Pokestop already spinned...")
