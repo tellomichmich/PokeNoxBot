@@ -1,4 +1,7 @@
 {
+    "AuthType" : "google",
+    "PtcUsername": "",
+    "PtcPassword": "",
     "KMLFile" : "Paris_Tour.kml",
     "ItemToDropCountList" : {
                             "Potion" : 0,
