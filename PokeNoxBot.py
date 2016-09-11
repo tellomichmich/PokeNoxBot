@@ -341,6 +341,11 @@ def IsNoMorePokeBall():
     pixdata = img.load()
     DEBUG_LOG("IsNoMorePokeBall (%d,%d,%d)" % pixdata[283, 737])
     return IsColorInCeil(pixdata[283, 737],  (179, 251, 165), 0.01)
+
+def IsArModeEnabled():
+    img = GetScreen()
+    pixdata = img.load()
+    return IsColorInCeil(pixdata[439, 66],  (20, 233, 219), 0.01)
     
 def PokemonWorker(PokemonPosition):
     COOL_LOG("Going to fight with %d %d !" % (PokemonPosition[0], PokemonPosition[1]))
@@ -352,12 +357,15 @@ def PokemonWorker(PokemonPosition):
     if IsOnMap() == True:
         ERROR_LOG("Tap on Pokemon failed !")
         return None
-    
+
     #Wait for fight
     for i in range(0, 5):
+        if IsArModeEnabled() == True:
+            WARNING_LOG("Disabling Augmented Reality Mode...")
+            Tap(424, 66)
         if IsPokemonFightOpen() == True:
             bIsPokemonFightOpened = True
-            break;
+            break
         if IsGymOpen() == True:
             ERROR_LOG("Holy... This is a Gym")
             CloseGym()
