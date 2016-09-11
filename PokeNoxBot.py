@@ -305,7 +305,17 @@ def IsOnMap():
     img = GetScreen()
     pixdata = img.load()
     return IsColorInCeil(pixdata[237, 703], (255, 57, 69), 0.01)
-    
+
+def IsOnSignUp():
+    img = GetScreen()
+    pixdata = img.load()
+    if IsColorInCeil(pixdata[123, 446], (233, 68, 51), 0.01):
+        if IsColorInCeil(pixdata[108, 465], (253, 187, 6), 0.01):
+            if IsColorInCeil(pixdata[137, 463], (68, 134, 249), 0.01):
+                if IsColorInCeil(pixdata[110, 524], (255, 183, 97), 0.01):
+                    return True
+    return False
+
 def IsCatchSucess():
     img = GetScreen()
     pixdata = img.load()
@@ -714,8 +724,37 @@ def RestartApplication():
     #Start the game
     Command = "bin\\adb shell monkey -p com.nianticlabs.pokemongo -c android.intent.category.LAUNCHER 1"
     os.system(Command)
-    timeout = 0
     while IsOnMap() == False:
+        if IsOnSignUp() == True:
+            if config['AuthType'] == "ptc":
+                INFO_LOG("Login whit Pokemon Trainer Club")
+                #Tap in pokemon trainer club
+                Tap(232, 546)
+                time.sleep(4)
+                #Tap in username
+                Tap(215, 418)
+                time.sleep(0.5)
+                INFO_LOG("Writing username...")
+                Command = "bin\\adb shell input text '%s'" %(config['PtcUsername'])
+                os.system(Command)
+                time.sleep(0.5)
+                #Double Tap in password
+                Tap(425, 759)
+                time.sleep(0.5)
+                Tap(202, 512)
+                time.sleep(1)
+                INFO_LOG("Writing password...")
+                Command = "bin\\adb shell input text '%s'" %(config['PtcPassword'])
+                os.system(Command)
+                time.sleep(0.5)
+                #Tap in Sign In
+                Tap(425, 759)
+                time.sleep(0.5)
+                Tap(327, 607)
+            elif config['AuthType'] == "google":
+                INFO_LOG("Login whit Google Account")
+                Tap(237, 464)
+            break
         #Tap on Retry
         Tap(230, 407)
         #Close Information popup
@@ -723,12 +762,8 @@ def RestartApplication():
         ClearScreen()
         INFO_LOG("Waiting for map...")
         time.sleep(2)
-        timeout =+1
-        if timeout == 60:
-            timeout = 0
-            KillNoxProcess()
+
     #Sometime got a "flash" map
-    time.sleep(2)
     ClearScreen()
     while IsOnMap() == False:
         #Close Information popup
