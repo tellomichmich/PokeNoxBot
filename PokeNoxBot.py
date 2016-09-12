@@ -31,8 +31,6 @@ TotalExperience = 0
 TrainerLevel = -1
 #TODO: A CLASS !! CLASSS !!
 BotPosition = (0, 0, 0)
-#TimeOut Value
-TimeOut = 0
                
 #This is a best effort implementation !            
 def GetPokemonFightNameCP():
@@ -1316,7 +1314,7 @@ if __name__ == '__main__':
     StartTime = time.time()
     #Max errors to restart Nox
     TimeOut = 0
-    TimeOutMax = 15
+    TimeOutMax = 20
     while True:
         try:
             for geo_point in loop_geo_points:
