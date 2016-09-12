@@ -1327,6 +1327,9 @@ if __name__ == '__main__':
     #Max errors to restart Nox
     TimeOut = 0
     TimeOutMax = 20
+    #Waiting for nox Time Out
+    TimeIOError = 0
+    TimeIOErrorMax = 70
     while True:
         try:
             for geo_point in loop_geo_points:
@@ -1380,6 +1383,7 @@ if __name__ == '__main__':
                     #Display estimated experience for kikoo-time !
                     INFO_LOG("~%d Exp/h" % ((GetExperience()/(time.time()-StartTime))*60*60))
                     if TimeOut > TimeOutMax:
+                        TimeOut = 0
                         COOL_LOG("Too many successive errors: Restarting...")
                         KillNoxProcess()
                 StepCount += 1
@@ -1389,7 +1393,13 @@ if __name__ == '__main__':
                 ERROR_LOG("The program can't detect nox , trying to start...")
                 StartNoxProcess(config['NoxPath'])
             else:
-                ERROR_LOG("Waiting for nox...")
+                TimeIOError += 1
+                if TimeIOError > TimeIOErrorMax:
+                    TimeIOError = 0
+                    COOL_LOG("Waiting for nox: Restarting...")
+                    KillNoxProcess()
+                else:
+                    ERROR_LOG("Waiting for nox: %s/%s" %(TimeIOError,TimeIOErrorMax))
             time.sleep(4)
             continue
         except:
