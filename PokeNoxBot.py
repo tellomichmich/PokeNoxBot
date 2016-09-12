@@ -732,6 +732,9 @@ def ClosePokemonFight():
     ClearScreen()
     
 def RestartApplication():
+    RTimeOut = 0
+    #2 Minutes (60*2sec)
+    RTimeOutMax = 60
     WARNING_LOG("Restarting the whole game !")
     #Close the game
     Command = "bin\\adb shell am force-stop com.nianticlabs.pokemongo"
@@ -775,7 +778,11 @@ def RestartApplication():
         #Close Information popup
         Tap(235, 457)
         ClearScreen()
-        INFO_LOG("Waiting for map...")
+        RTimeOut += 1
+        if RTimeOut > RTimeOutMax:
+            COOL_LOG("Waiting for map limit: Restarting...")
+            KillNoxProcess()
+        INFO_LOG("Waiting for map: %s/%s" %(RTimeOut,RTimeOutMax)) 
         time.sleep(2)
 
     #Sometime got a "flash" map
@@ -785,8 +792,13 @@ def RestartApplication():
         #Close Information popup
         Tap(235, 457)
         ClearScreen()
-        INFO_LOG("Waiting for map...")
+        RTimeOut += 1
+        if RTimeOut > RTimeOutMax:
+            COOL_LOG("Waiting for map limit: Restarting...")
+            KillNoxProcess()
+        INFO_LOG("Waiting for map: %s/%s" %(RTimeOut,RTimeOutMax))
         time.sleep(2)
+    RTimeOut = 0
     ZoomOut()
     ClearScreen()
 
