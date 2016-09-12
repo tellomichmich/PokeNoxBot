@@ -31,6 +31,8 @@ TotalExperience = 0
 TrainerLevel = -1
 #TODO: A CLASS !! CLASSS !!
 BotPosition = (0, 0, 0)
+#TimeOut Value
+TimeOut = 0
                
 #This is a best effort implementation !            
 def GetPokemonFightNameCP():
@@ -564,6 +566,9 @@ def PokestopWorker(PokeStopPosition):
         ERROR_LOG("Tap on Pokestop failed !")
         return False
     bOpenPokestopSuccess = False
+    
+    #Wait end of animation
+    time.sleep(0.7)
     for i in range(5):
         if IsPokestopTooFar() == True:
             ERROR_LOG("Pokestop is too far !")
@@ -586,7 +591,7 @@ def PokestopWorker(PokeStopPosition):
             CloseGym()
         INFO_LOG("Wait for open pokestop")
         ClearScreen()
-            
+
     if bOpenPokestopSuccess == True:
         SpinPokestop()
         bIsPokestopSpinned = False
@@ -713,7 +718,11 @@ def IsPokeBoxFull():
 def IsPokestopTooFar():
     img = GetScreen()
     pixdata = img.load()
-    return IsColorInCeil(pixdata[379,653], (229, 127, 179), 0.005)
+    if IsColorInCeil(pixdata[379,653], (229, 127, 179), 0.005):
+        return True
+    if IsColorInCeil(pixdata[379,653], (230, 125, 181), 0.005):
+        return True
+    return False
 
 def IsBagFull():
     img = GetScreen()
@@ -772,6 +781,7 @@ def RestartApplication():
         time.sleep(2)
 
     #Sometime got a "flash" map
+    time.sleep(2)
     ClearScreen()
     while IsOnMap() == False:
         #Close Information popup
@@ -1049,7 +1059,7 @@ def CleanAllPokemon():
     ClearScreen()
     for i in range(250):
         PokemonIV = GetPokemonIV()
-        print PokemonIV
+        print (PokemonIV)
         if (not PokemonIV is None) and PokemonIV['perfection'] <= config['IVLimit']:
             bIsForwardNeeded = False
             if IsEvolvable() == True and GetPokemonName() in config['EvolveList']:
@@ -1304,6 +1314,9 @@ if __name__ == '__main__':
     #Set Initial position
     SetPosition(loop_geo_points[0])
     StartTime = time.time()
+    #Max errors to restart Nox
+    TimeOut = 0
+    TimeOutMax = 15
     while True:
         try:
             for geo_point in loop_geo_points:
@@ -1327,8 +1340,11 @@ if __name__ == '__main__':
                             INFO_LOG("No more Pokestop found.")
                             break
                         if PokestopWorker(PokeStopPosition) == False:
+                            TimeOut += 1
+                            DEBUG_LOG("Too many successive errors: %s/%s" %(TimeOut,TimeOutMax))
                             ERROR_LOG("Something failed...")
                             break
+                        TimeOut = 0
                     
                     while config['ProcessPokemon']:
                         INFO_LOG("Looking for pokemon")
@@ -1342,14 +1358,20 @@ if __name__ == '__main__':
                             break
                         PokemonWorkerReturn = PokemonWorker(PokemonPosition)
                         if PokemonWorkerReturn == None:
+                            TimeOut += 1
+                            DEBUG_LOG("Too many successive errors: %s/%s" %(TimeOut,TimeOutMax))
                             break
                         if PokemonWorkerReturn == False:
                             if IsGymOpen() == True:
                                 CloseGym()
                                 ERROR_LOG("This place is near a Gym !")
                                 break
-                    #Display estimated exprience for kikoo-time !
+                        TimeOut = 0
+                    #Display estimated experience for kikoo-time !
                     INFO_LOG("~%d Exp/h" % ((GetExperience()/(time.time()-StartTime))*60*60))
+                    if TimeOut > TimeOutMax:
+                        COOL_LOG("Too many successive errors: Restarting...")
+                        KillNoxProcess()
                 StepCount += 1
                 #SetPosition(geo_point)
         except IOError as err:
