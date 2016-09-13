@@ -246,8 +246,7 @@ def GetEvent():
             if a in line:
                 x = line_num+4
             elif line_num == x:
-                m = re.search("(event[0-9])", line)
-                result = m.group(1).replace(m.group(1)[:5], '')
+                result = line.replace(line[:36], '')
                 return result
 
 #Change the file whit the correct event number
