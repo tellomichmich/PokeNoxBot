@@ -1330,6 +1330,9 @@ if __name__ == '__main__':
     #Waiting for nox Time Out
     TimeIOError = 0
     TimeIOErrorMax = 70
+    #Pokestop and Pokemon Count
+    PokestopCount = 0
+    PokemonCount = 0
     while True:
         try:
             for geo_point in loop_geo_points:
@@ -1357,6 +1360,7 @@ if __name__ == '__main__':
                             DEBUG_LOG("Too many successive errors: %s/%s" %(TimeOut,TimeOutMax))
                             ERROR_LOG("Something failed...")
                             break
+                        PokestopCount += 1
                         TimeOut = 0
                     
                     while config['ProcessPokemon']:
@@ -1379,9 +1383,11 @@ if __name__ == '__main__':
                                 CloseGym()
                                 ERROR_LOG("This place is near a Gym !")
                                 break
+                        PokemonCount += 1
                         TimeOut = 0
                     #Display estimated experience for kikoo-time !
                     INFO_LOG("~%d Exp/h" % ((GetExperience()/(time.time()-StartTime))*60*60))
+                    INFO_LOG("Pokemons captured: %s, Pokestops spined: %s" %(PokemonCount,PokestopCount))
                     if TimeOut > TimeOutMax:
                         TimeOut = 0
                         COOL_LOG("Too many successive errors: Restarting...")
